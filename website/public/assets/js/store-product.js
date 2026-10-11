@@ -39,6 +39,20 @@ function showProduct(id) {
 
 /** Создать миниатюры и установить главную фотографию товара. */
 function renderProductGallery(p, visual) {
+  closePhotoViewer();
+  productPhotos = p.photos || [];
+  productPhotoIndex = 0;
+  productPhotoName = p.name;
+  visual.setAttribute("role", productPhotos.length ? "button" : "img");
+  visual.tabIndex = productPhotos.length ? 0 : -1;
+  visual.setAttribute("aria-label", productPhotos.length ? "Открыть фотографии: " + p.name : p.name + " — демонстрационная иллюстрация");
+  visual.onclick = productPhotos.length ? openPhotoViewer : null;
+  visual.onkeydown = (event) => {
+    if (productPhotos.length && (event.key === "Enter" || event.key === " ")) {
+      event.preventDefault();
+      openPhotoViewer();
+    }
+  };
   const gallery = $("#product-gallery");
   gallery.innerHTML = "";
   p.photos?.forEach(
@@ -53,6 +67,7 @@ function renderProductGallery(p, visual) {
       button.append(image);
       button.onclick =
         /** Обработать нажатие с данными выбранного элемента. */ () => {
+          productPhotoIndex = index;
           visual.style.backgroundImage = "url(" + JSON.stringify(url) + ")";
           visual.style.backgroundSize = "contain";
           visual.style.backgroundPosition = "center";
@@ -66,3 +81,73 @@ function renderProductGallery(p, visual) {
   visual.style.backgroundSize = p.photos?.length ? "contain" : "";
   visual.style.backgroundPosition = p.photos?.length ? "center" : "";
 }
+
+let productPhotos = [];
+let productPhotoIndex = 0;
+let productPhotoName = "";
+let photoViewerScroll = "";
+const photoViewer = $("#photo-viewer");
+let photoAnimation = null;
+
+function animateViewerPhoto(step = 0) {
+  photoAnimation?.cancel();
+  const image = photoViewer.querySelector("img");
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  photoAnimation = image.animate(
+    [
+      { opacity: 0, transform: step ? "translateX(" + (step > 0 ? 40 : -40) + "px)" : "scale(.94)" },
+      { opacity: 1, transform: "translateX(0) scale(1)" },
+    ],
+    { duration: step ? 240 : 280, easing: "cubic-bezier(.2,.7,.2,1)" },
+  );
+}
+
+function updatePhotoViewer() {
+  const image = photoViewer.querySelector("img");
+  image.src = productPhotos[productPhotoIndex];
+  image.alt = productPhotoName + " — фото " + (productPhotoIndex + 1);
+  photoViewer.querySelector(".photo-viewer-count").textContent =
+    (productPhotoIndex + 1) + " / " + productPhotos.length;
+  photoViewer.querySelector(".photo-viewer-prev").hidden = productPhotos.length < 2;
+  photoViewer.querySelector(".photo-viewer-next").hidden = productPhotos.length < 2;
+}
+
+function openPhotoViewer() {
+  if (!productPhotos.length || photoViewer.open) return;
+  updatePhotoViewer();
+  photoViewerScroll = document.body.style.overflow;
+  document.body.style.overflow = "hidden";
+  photoViewer.showModal();
+  animateViewerPhoto();
+}
+
+function closePhotoViewer() {
+  if (photoViewer.open) photoViewer.close();
+}
+
+function stepPhotoViewer(step) {
+  if (!photoViewer.open || productPhotos.length < 2) return;
+  productPhotoIndex = (productPhotoIndex + step + productPhotos.length) % productPhotos.length;
+  updatePhotoViewer();
+  animateViewerPhoto(step);
+  $("#product-gallery").children[productPhotoIndex]?.click();
+}
+
+photoViewer.querySelector(".photo-viewer-close").onclick = closePhotoViewer;
+photoViewer.querySelector(".photo-viewer-prev").onclick = () => stepPhotoViewer(-1);
+photoViewer.querySelector(".photo-viewer-next").onclick = () => stepPhotoViewer(1);
+photoViewer.addEventListener("close", () => {
+  photoAnimation?.cancel();
+  document.body.style.overflow = photoViewerScroll;
+});
+photoViewer.addEventListener("click", (event) => {
+  if (event.target === photoViewer) closePhotoViewer();
+});
+photoViewer.addEventListener("keydown", (event) => {
+  if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+    event.preventDefault();
+    event.stopPropagation();
+    stepPhotoViewer(event.key === "ArrowLeft" ? -1 : 1);
+  }
+});
+window.addEventListener("hashchange", closePhotoViewer);

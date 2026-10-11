@@ -507,14 +507,14 @@
           <span id="product-crumb">Дом / Настольная лампа</span>
         </div>
         <div class="product-layout">
-          <div>
+          <div class="product-media">
+            <div id="product-gallery" class="product-gallery"></div>
             <div
               id="product-visual"
               class="product-photo q0"
               role="img"
               aria-label="Демонстрационная лампа"
             ></div>
-            <div id="product-gallery" class="product-gallery"></div>
           </div>
           <div class="detail-copy">
             <span class="demo">Демонстрационный товар</span>
@@ -717,6 +717,19 @@
       </div>
       <button type="button" id="toast-close" class="toast-close" aria-label="Закрыть уведомление">×</button>
     </div>
+    <dialog id="photo-viewer" class="photo-viewer" aria-label="Фотографии товара">
+      <button type="button" class="photo-viewer-close" aria-label="Закрыть просмотр" autofocus>
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18" /></svg>
+      </button>
+      <button type="button" class="photo-viewer-prev" aria-label="Предыдущее фото">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 6-6 6 6 6" /></svg>
+      </button>
+      <img class="photo-viewer-image" alt="" />
+      <button type="button" class="photo-viewer-next" aria-label="Следующее фото">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+      </button>
+      <div class="photo-viewer-count" role="status" aria-live="polite"></div>
+    </dialog>
     <script src="assets/js/products.js"></script>
     <script src="assets/js/shared.js"></script>
     <script src="assets/js/store-state.js"></script>
