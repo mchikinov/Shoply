@@ -34,3 +34,25 @@
 .detail-purchase .purchase-qty{flex:0 0 112px;width:112px}
 
 .price-filter{display:flex;align-items:center;gap:16px}.price-filter-title{font-size:12px}.price-range-control{width:280px;max-width:100%}.price-range-values{display:flex;justify-content:space-between;gap:16px;font-size:12px;color:#707987}.price-range-values output{color:var(--color-text);font-variant-numeric:tabular-nums}.price-range-track{position:relative;height:36px;--range-start:0%;--range-end:100%}.price-range-rail{position:absolute;inset:16px 10px;height:4px;border-radius:4px;background:linear-gradient(to right,#dfe4ec var(--range-start),var(--color-accent) var(--range-start),var(--color-accent) var(--range-end),#dfe4ec var(--range-end))}.filter-row .price-range-track input{position:absolute;inset:0;width:100%;height:36px;margin:0;padding:0;border:0;background:transparent;appearance:none;-webkit-appearance:none;pointer-events:none}.price-range-track input::-webkit-slider-runnable-track{height:4px;background:transparent}.price-range-track input::-moz-range-track{height:4px;background:transparent}.price-range-track input::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:20px;height:20px;margin-top:-8px;border:2px solid var(--color-accent);border-radius:50%;background:white;pointer-events:auto;cursor:grab;box-shadow:0 1px 4px #18223126}.price-range-track input::-moz-range-thumb{width:16px;height:16px;border:2px solid var(--color-accent);border-radius:50%;background:white;pointer-events:auto;cursor:grab;box-shadow:0 1px 4px #18223126}.price-range-track input:focus-visible{outline:0}.price-range-track input:focus-visible::-webkit-slider-thumb{outline:3px solid var(--color-accent);outline-offset:3px}.price-range-track input:focus-visible::-moz-range-thumb{outline:3px solid var(--color-accent);outline-offset:3px}.price-range-track input:disabled{opacity:.5}@media(max-width:650px){.price-filter{width:100%;align-items:flex-start;flex-direction:column;gap:6px}.price-range-control{width:100%}}
+
+/* Корзина поверх текущей страницы. */
+html.cart-open{overflow:hidden}
+.cart-drawer{position:fixed;inset:0;z-index:30;background:#18223166;display:flex;justify-content:flex-end;animation:cart-backdrop-in .25s ease-out}
+.cart-drawer[hidden]{display:none}
+.cart-panel{width:min(100%,540px);height:100%;height:100dvh;overflow-y:auto;overscroll-behavior:contain;background:var(--color-bg);padding:28px;box-shadow:-12px 0 40px #18223126;animation:cart-slide-in .3s ease-out}
+.cart-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:28px}
+.cart-heading h1{margin:0;font-size:28px}
+.cart-close{display:flex;align-items:center;justify-content:center;width:44px;height:44px;flex-shrink:0;border:0;background:#f5f6f8;border-radius:50%}
+.cart-close:hover{background:#e7eaf0}
+.cart-panel .split{grid-template-columns:minmax(0,1fr);gap:28px}
+.cart-panel .cart-line{grid-template-columns:72px minmax(0,1fr);gap:16px}
+.cart-panel .cart-line>.price{grid-column:2}
+.cart-continue{border:0;background:none;padding:12px 0 0;color:inherit}
+.cart-drawer.is-closing{animation:cart-backdrop-out .3s ease-in forwards}
+.cart-drawer.is-closing .cart-panel{animation:cart-slide-out .3s ease-in forwards}
+@keyframes cart-slide-out{from{transform:translateX(0)}to{transform:translateX(100%)}}
+@keyframes cart-backdrop-out{from{background:#18223166}to{background:transparent}}
+@keyframes cart-slide-in{from{transform:translateX(100%)}to{transform:translateX(0)}}
+@keyframes cart-backdrop-in{from{background:transparent}to{background:#18223166}}
+@media(max-width:650px){.cart-panel{padding:20px}}
+@media(prefers-reduced-motion:reduce){.cart-drawer,.cart-panel,.cart-drawer.is-closing,.cart-drawer.is-closing .cart-panel{animation:none}}

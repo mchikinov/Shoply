@@ -534,9 +534,12 @@
           </div>
         </div>
       </section>
-      <section class="screen" id="cart">
-        <div class="crumb"><a href="#catalog">Каталог</a> / Корзина</div>
-        <h1>Корзина</h1>
+      <section class="cart-drawer" id="cart" hidden>
+        <div class="cart-panel" role="dialog" aria-modal="true" aria-labelledby="cart-title">
+        <div class="cart-heading">
+          <h1 id="cart-title">Корзина</h1>
+          <button type="button" class="cart-close" data-close-cart aria-label="Закрыть корзину"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg></button>
+        </div>
         <div class="split">
           <div>
             <div id="cart-lines"></div>
@@ -559,8 +562,9 @@
             <p class="small muted">
               Стоимость доставки пока не рассчитывается.
             </p>
-            <a class="small" href="#catalog">← Продолжить покупки</a>
+            <button type="button" class="cart-continue small" data-close-cart>← Продолжить покупки</button>
           </aside>
+        </div>
         </div>
       </section>
       <section class="screen" id="checkout">
