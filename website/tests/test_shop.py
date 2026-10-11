@@ -1,6 +1,5 @@
 """Интеграционная проверка HTTP API и сохранения данных при перезапуске."""
 
-import base64
 import http.cookiejar
 import json
 import os
@@ -154,9 +153,11 @@ class ShopTest(unittest.TestCase):
                 p["id"] = pid
                 p["price"] = 99.5
                 self.assertEqual(call("/api/admin/products", p)[0], 200)
-                image = base64.b64encode(
-                    (ROOT / "public/assets/images/shoply-product.jpg").read_bytes()
-                ).decode()
+                # PNG 1×1: тест загрузки не зависит от картинок витрины.
+                image = (
+                    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwC"
+                    "AAAAC0lEQVR42mP8/x8AAwMCAO+aD1sAAAAASUVORK5CYII="
+                )
                 code, uploaded = call("/api/admin/upload", {"data": image})
                 self.assertEqual(code, 201)
                 p["photos"] = [uploaded["path"]]
