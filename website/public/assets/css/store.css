@@ -119,3 +119,15 @@ html.cart-open{overflow:hidden}
   .filter-panel{grid-template-columns:max-content minmax(240px,1fr) max-content minmax(240px,1fr)}
   .filter-panel .chips{grid-column:auto}
 }
+
+/* Загрузка каталога: размеры соответствуют обычным карточкам. */
+#catalog-skeleton[hidden],.loading-status[hidden]{display:none}
+.is-loading #preview-products,.is-loading .result-row,.is-loading #no-products{display:none}
+.loading-status{color:#707987;font-size:12px;margin:24px 0 16px}
+.skeleton-photo,.skeleton-line{background:#eef0f4;animation:skeleton-pulse 1.4s ease-in-out infinite}
+.skeleton-photo{width:100%;aspect-ratio:1;border-radius:12px}
+.skeleton-line{height:18px;border-radius:5px;margin-top:10px;width:85%}
+.skeleton-category{height:12px;width:35%;margin-top:14px}
+.skeleton-price{height:32px;width:50%;margin-top:14px}
+@keyframes skeleton-pulse{50%{opacity:.45}}
+@media(prefers-reduced-motion:reduce){.skeleton-photo,.skeleton-line{animation:none}}

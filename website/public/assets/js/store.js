@@ -104,6 +104,7 @@ async function start() {
     $("#connection-note").textContent =
       "Для сохранения заказов запустите backend/server.py и откройте http://127.0.0.1:8765/. Сейчас доступен просмотр каталога.";
   } else {
+    setCatalogLoading(true);
     try {
       const response = await fetch("/api/shop");
       if (!response.ok) throw new Error("Сервер недоступен.");
@@ -127,6 +128,8 @@ async function start() {
     } catch (error) {
       $("#connection-note").textContent =
         "Нет соединения с сервером. Оформление недоступно: " + error.message;
+    } finally {
+      setCatalogLoading(false);
     }
   }
   $("#order-fields").disabled = !serverReady;

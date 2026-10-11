@@ -1,4 +1,9 @@
 /** store: store-navigation.js; загружается в порядке, указанном в HTML. */
+let activeScreenKey = null;
+let catalogScrollY = 0;
+if (window.history && "scrollRestoration" in window.history)
+  window.history.scrollRestoration = "manual";
+
 let cartReturnHash = "#catalog";
 let cartTrigger = null;
 let cartIsOpen = false;
@@ -26,6 +31,7 @@ function screen() {
     location.replace("#catalog");
     return;
   }
+  const screenKey = id === "product" ? `product/${parts[1]}` : id;
   const openingCart = id === "cart";
   const drawer = $("#cart");
   if (openingCart) {
@@ -47,6 +53,8 @@ function screen() {
   }
   cartCloseFinished = false;
   drawer.classList.toggle("is-closing", false);
+  if (!openingCart && screenKey !== activeScreenKey && activeScreenKey === "catalog")
+    catalogScrollY = window.scrollY || 0;
   const wasCartOpen = cartIsOpen;
   const returningFromCart = wasCartOpen && location.hash === cartReturnHash;
   if (openingCart && !wasCartOpen) cartTrigger = document.activeElement;
@@ -72,7 +80,11 @@ function screen() {
   else if (returningFromCart && cartTrigger?.isConnected)
     cartTrigger.focus({ preventScroll: true });
   else heading.focus({ preventScroll: true });
-  if (!openingCart && !wasCartOpen) window.scrollTo(0, 0);
+  if (!openingCart && screenKey !== activeScreenKey) {
+    window.scrollTo(0, id === "catalog" ? catalogScrollY : 0);
+    animateAppearance($("#" + id));
+    activeScreenKey = screenKey;
+  }
 }
 
 // Закрытие по фону и Escape; клавиатурный фокус остаётся внутри панели.

@@ -88,6 +88,13 @@
           <span id="found-demo">22 товара</span
           ><span>Цены указаны в рублях</span>
         </div>
+        <p id="catalog-loading-status" class="loading-status" role="status" hidden>Загружаем товары…</p>
+        <div id="catalog-skeleton" class="product-grid" aria-hidden="true" hidden>
+          <div class="skeleton-card"><div class="skeleton-photo"></div><div class="skeleton-line skeleton-category"></div><div class="skeleton-line"></div><div class="skeleton-line skeleton-price"></div></div>
+          <div class="skeleton-card"><div class="skeleton-photo"></div><div class="skeleton-line skeleton-category"></div><div class="skeleton-line"></div><div class="skeleton-line skeleton-price"></div></div>
+          <div class="skeleton-card"><div class="skeleton-photo"></div><div class="skeleton-line skeleton-category"></div><div class="skeleton-line"></div><div class="skeleton-line skeleton-price"></div></div>
+          <div class="skeleton-card"><div class="skeleton-photo"></div><div class="skeleton-line skeleton-category"></div><div class="skeleton-line"></div><div class="skeleton-line skeleton-price"></div></div>
+        </div>
         <div class="product-grid" id="preview-products">
           <article data-id="0" data-category="Дом" data-price="4900">
             <a
@@ -490,7 +497,7 @@
           Товары не найдены. Измените фильтры или нажмите «Сбросить».
         </p>
       </section>
-      <section class="screen" id="product">
+      <section class="screen" id="product" hidden>
         <div class="crumb">
           <a href="#catalog">Каталог</a> /
           <span id="product-crumb">Дом / Настольная лампа</span>
@@ -567,7 +574,7 @@
         </div>
         </div>
       </section>
-      <section class="screen" id="checkout">
+      <section class="screen" id="checkout" hidden>
         <div class="crumb">
           <a href="#catalog">Каталог</a> / <a href="#cart">Корзина</a> /
           Оформление
@@ -644,7 +651,7 @@
           </aside>
         </div>
       </section>
-      <section class="screen" id="success">
+      <section class="screen" id="success" hidden>
         <div class="crumb"><a href="#catalog">Каталог</a> / Заказ оформлен</div>
         <div class="success-layout">
           <div>

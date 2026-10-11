@@ -67,6 +67,10 @@ function filter() {
   );
   $("#found-demo").textContent = found + " " + plural(found);
   $("#no-products").hidden = found !== 0;
+  if (!$("#catalog").hidden) {
+    cards.filter((card) => !card.hidden).slice(0, 4)
+      .forEach((card, index) => animateAppearance(card, 4, 180, index * 25));
+  }
 }
 
 /** Построить карточки товаров и доступные категории каталога. */
@@ -106,4 +110,27 @@ function renderCatalog(list) {
           `<button data-category="${escapeHTML(c)}">${escapeHTML(c)}</button>`,
       )
       .join("");
+}
+
+/** Скелетоны занимают место карточек только во время реального запроса. */
+function setCatalogLoading(loading) {
+  $("#catalog").classList.toggle("is-loading", loading);
+  $("#preview-products").setAttribute("aria-busy", String(loading));
+  $("#catalog-skeleton").hidden = !loading;
+  $("#catalog-loading-status").hidden = !loading;
+  document.querySelectorAll("#catalog input, #catalog select, #catalog button, .search input")
+    .forEach((control) => {
+      if (loading) control.dataset.loadingDisabled = String(control.disabled);
+      control.disabled = loading || control.dataset.loadingDisabled === "true";
+    });
+}
+
+/** Новая анимация заменяет предыдущую при быстрых действиях. */
+function animateAppearance(element, distance = 8, duration = 240, delay = 0) {
+  if (!element?.animate || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+  element.getAnimations().forEach((animation) => animation.cancel());
+  element.animate([
+    { opacity: 0, transform: `translateY(${distance}px)` },
+    { opacity: 1, transform: "translateY(0)" },
+  ], { duration, delay, easing: "cubic-bezier(.2,.7,.2,1)", fill: "backwards" });
 }
