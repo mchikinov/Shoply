@@ -25,11 +25,20 @@ function cartState() {
   const lines = Object.entries(basket).filter(([id, n]) => n > 0 && products[Number(id)]).map(([id, quantity]) => ({ ...products[Number(id)], quantity }));
   return { lines, count: lines.reduce((sum, p) => sum + p.quantity, 0), total: lines.reduce((sum, p) => sum + p.price * p.quantity, 0) };
 }
+function purchaseControl(id, detail = false) {
+  const p = products[id], quantity = basket[id] || 0;
+  if (!quantity) return `<button class="button${detail ? '' : ' secondary'}" data-add="${id}">${detail ? 'Добавить в корзину' : 'В корзину'}</button>`;
+  return `<div class="qty purchase-qty" role="group" aria-label="Количество ${escapeHTML(p.name)} в корзине"><button type="button" data-quantity="${id}" data-delta="-1" aria-label="Уменьшить количество ${escapeHTML(p.name)}">−</button><span aria-live="polite" aria-atomic="true">${quantity}</span><button type="button" data-quantity="${id}" data-delta="1" aria-label="Увеличить количество ${escapeHTML(p.name)}" ${quantity >= 999 ? 'disabled' : ''}>+</button></div>`;
+}
 function sync() {
   const active = document.activeElement;
-  const focusId = active?.dataset.quantity;
+  const focusHost = active?.closest('[data-purchase], #cart-lines');
+  const focusId = active?.dataset.quantity ?? active?.dataset.add;
   const focusDelta = active?.dataset.delta;
   const state = cartState();
+  document.querySelectorAll('[data-purchase]').forEach(el => {
+    if (products[el.dataset.purchase]) el.innerHTML = purchaseControl(el.dataset.purchase, el.classList.contains('detail-purchase'));
+  });
   $('#cart-lines').innerHTML = state.lines.map(p => `<article class="cart-line"><a href="#product/${p.id}" class="product-photo q${p.photo}" role="img" aria-label="${escapeHTML(p.name)}"></a><div><h2><a href="#product/${p.id}">${escapeHTML(p.name)}</a></h2><div class="small muted">${fmt(p.price)} за штуку</div><div class="qty"><button data-quantity="${p.id}" data-delta="-1" aria-label="Уменьшить количество ${escapeHTML(p.name)}">−</button><span>${p.quantity}</span><button data-quantity="${p.id}" data-delta="1" aria-label="Увеличить количество ${escapeHTML(p.name)}" ${p.quantity >= 999 ? 'disabled' : ''}>+</button></div></div><b class="price">${fmt(p.price * p.quantity)}</b></article>`).join('') || '<p class="muted">Корзина пуста. <a href="#catalog">Перейти в каталог →</a></p>';
   $('#basket-count').textContent = state.count;
   $('#cart-quantity').textContent = state.count + ' ' + plural(state.count);
@@ -38,7 +47,7 @@ function sync() {
   $('#checkout-link').hidden = !state.count;
   document.querySelector('[form="demo-order"]').disabled = !state.count || !serverReady || submitting;
   if (focusId !== undefined) {
-    const replacement = $(`[data-quantity="${focusId}"][data-delta="${focusDelta}"]`) || $('#cart-lines [data-quantity]') || $('#cart-lines a');
+    const replacement = focusHost?.querySelector(`[data-quantity="${focusId}"][data-delta="${focusDelta || 1}"]:not(:disabled)`) || focusHost?.querySelector(`[data-add="${focusId}"]`) || focusHost?.querySelector('[data-quantity]:not(:disabled)') || $('#cart-lines [data-quantity]') || $('#cart-lines a');
     replacement?.focus({ preventScroll: true });
   }
   document.querySelectorAll('#cart-lines .cart-line').forEach((el,index)=>{const p=state.lines[index];if(p.photos?.length){const photo=el.querySelector('.product-photo');photo.style.backgroundImage='url('+JSON.stringify(p.photos[0])+')';photo.style.backgroundSize='contain';photo.style.backgroundPosition='center';}});
@@ -50,7 +59,9 @@ function showProduct(id) {
   $('#product h1').textContent = p.name;
   $('#product-crumb').textContent = p.category + ' / ' + p.name;
   $('#product .price').textContent = fmt(p.price);
-  $('#product [data-add]').dataset.add = p.id;
+  const purchase = $('#product .detail-purchase');
+  purchase.dataset.purchase = p.id;
+  purchase.innerHTML = purchaseControl(p.id, true);
   const visual = $('#product-visual');
   visual.className = 'product-photo q' + p.photo;
   visual.setAttribute('aria-label', p.name + ' — демонстрационная иллюстрация');
@@ -118,6 +129,7 @@ document.addEventListener('click', event => {
   button = event.target.closest('[data-quantity]');
   if (button) {
     const id = button.dataset.quantity;
+    if (!products[id]) return;
     basket[id] = Math.max(0, Math.min(999, (basket[id] || 0) + Number(button.dataset.delta)));
     if (!basket[id]) delete basket[id];
     sync();
@@ -171,7 +183,7 @@ $('#demo-order').addEventListener('submit', async event => {
 $('#support-demo').onclick=()=>{if(settings.telegram)window.open(settings.telegram,'_blank','noopener,noreferrer');else toast('Поддержка в Telegram пока не настроена.');};
 window.addEventListener('hashchange', screen);
 function renderCatalog(list) {
-  $('#preview-products').innerHTML=list.map(p=>`<article data-id="${p.id}" data-category="${escapeHTML(p.category)}" data-price="${p.price}"><a href="#product/${p.id}" class="product-photo q${p.photo||0}" role="img" aria-label="${escapeHTML(p.name)}"></a><div class="category">${escapeHTML(p.category)}</div><a href="#product/${p.id}" class="product-name">${escapeHTML(p.name)}</a><div class="buy-row"><span class="price">${fmt(p.price)}</span><button class="button secondary" data-add="${p.id}">В корзину</button></div></article>`).join('');
+  $('#preview-products').innerHTML=list.map(p=>`<article data-id="${p.id}" data-category="${escapeHTML(p.category)}" data-price="${p.price}"><a href="#product/${p.id}" class="product-photo q${p.photo||0}" role="img" aria-label="${escapeHTML(p.name)}"></a><div class="category">${escapeHTML(p.category)}</div><a href="#product/${p.id}" class="product-name">${escapeHTML(p.name)}</a><div class="buy-row"><span class="price">${fmt(p.price)}</span><div data-purchase="${p.id}">${purchaseControl(p.id)}</div></div></article>`).join('');
   document.querySelectorAll('#preview-products article').forEach(card=>{const p=products[Number(card.dataset.id)];const photo=card.querySelector('.product-photo');if(p.photos?.length){photo.style.backgroundImage='url('+JSON.stringify(p.photos[0])+')';photo.style.backgroundSize='contain';photo.style.backgroundPosition='center';}});
   $('.chips').innerHTML='<button class="active" data-category="Все">Все товары</button>'+[...new Set(list.map(p=>p.category))].map(c=>`<button data-category="${escapeHTML(c)}">${escapeHTML(c)}</button>`).join('');
 }

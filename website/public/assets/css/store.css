@@ -11,3 +11,14 @@
 .empty-message{padding:35px 0;color:#707987}
 
 .brand-logo{max-width:160px;max-height:48px;object-fit:contain}.product-gallery{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}.thumbnail{width:66px;height:66px;padding:0;border:1px solid #dfe4ec;background:white}.thumbnail img{width:100%;height:100%;object-fit:contain}.header .logo{max-width:220px;overflow-wrap:anywhere}.specs dd{overflow-wrap:anywhere}
+
+/* Управление количеством в каталоге и на странице товара. */
+.purchase-qty{margin:0;min-width:100px;justify-content:space-between;background:#edf3ff;border-color:transparent;color:var(--color-accent)}
+.purchase-qty button{min-width:32px;min-height:38px;padding:6px 10px}
+.purchase-qty span{min-width:28px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums}
+.qty button:disabled{opacity:.4;cursor:default}
+.detail-purchase{margin:24px 0;width:100%;max-width:340px}
+.detail-purchase .button{margin:0}
+.detail-purchase .purchase-qty{display:flex;min-height:44px}
+@media(max-width:1000px){.buy-row [data-purchase],.buy-row .purchase-qty{width:100%}}
+@media(max-width:650px){.detail-purchase{max-width:none}}
