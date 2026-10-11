@@ -165,6 +165,8 @@ function renderCartLines(state) {
 /** Обновить количество, сумму и доступность оформления. */
 function renderCartSummary(state) {
   $("#basket-count").textContent = state.count;
+  $("#floating-cart-count").textContent = state.count;
+  $("#floating-cart").setAttribute("aria-label", `Открыть корзину: ${state.count} ${plural(state.count)}`);
   $("#cart-quantity").textContent = state.count + " " + plural(state.count);
   document
     .querySelectorAll("#cart [data-total], #checkout [data-total]")

@@ -52,6 +52,7 @@ function screen() {
   if (openingCart && !wasCartOpen) cartTrigger = document.activeElement;
   const backgroundId = openingCart ? cartReturnHash.slice(1).split("/")[0] : id;
   $("#cart").hidden = !openingCart;
+  $("#floating-cart").hidden = openingCart;
   document.documentElement.classList.toggle("cart-open", openingCart);
   document.querySelectorAll("header, footer, .screen").forEach((el) => {
     el.inert = openingCart;
