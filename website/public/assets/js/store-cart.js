@@ -113,8 +113,10 @@ function purchaseControl(id, detail = false) {
 /** Обновить корзину и элементы покупки, восстановить фокус и сохранить состояние. */
 function sync() {
   const { focusHost, focusId, focusDelta } = purchaseFocus();
+  const motion = capturePurchaseMotion();
   const state = cartState();
   renderCartLines(state);
+  animatePurchaseMotion(motion);
   renderCartSummary(state);
   restorePurchaseFocus(focusHost, focusId, focusDelta);
   document.querySelectorAll("#cart-lines .cart-line").forEach(
@@ -130,6 +132,47 @@ function sync() {
     },
   );
   saveBasket();
+}
+
+/** Снять видимые размеры перед заменой элементов покупки. */
+function capturePurchaseMotion() {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return [];
+  return [...document.querySelectorAll("[data-purchase], [data-cart-product]")]
+    .map((host) => {
+      const control = host.matches("[data-purchase]")
+        ? host.firstElementChild
+        : host.querySelector(".purchase-actions");
+      if (!control || !control.getClientRects().length) return null;
+      return {
+        host,
+        cartId: host.dataset.cartProduct,
+        rect: control.getBoundingClientRect(),
+        content: control.textContent,
+      };
+    }).filter(Boolean);
+}
+
+/** Плавно изменить габариты и подчеркнуть новое количество. */
+function animatePurchaseMotion(snapshots) {
+  for (const { host, cartId, rect, content } of snapshots) {
+    const currentHost = cartId === undefined ? host
+      : document.querySelector(`[data-cart-product="${cartId}"]`);
+    const control = cartId === undefined ? currentHost?.firstElementChild
+      : currentHost?.querySelector(".purchase-actions");
+    if (!control || !control.animate || content === control.textContent) continue;
+    const next = control.getBoundingClientRect();
+    if (Math.abs(rect.width - next.width) > 1 || Math.abs(rect.height - next.height) > 1) {
+      control.animate([
+        { width: `${rect.width}px`, height: `${rect.height}px`, overflow: "hidden" },
+        { width: `${next.width}px`, height: `${next.height}px`, overflow: "hidden" },
+      ], { duration: 260, easing: "cubic-bezier(.22, 1, .36, 1)" });
+    }
+    const value = control.querySelector(".purchase-qty span") || control;
+    value.animate([
+      { opacity: .45, transform: "scale(.88)" },
+      { opacity: 1, transform: "scale(1)" },
+    ], { duration: 220, easing: "cubic-bezier(.22, 1, .36, 1)" });
+  }
 }
 
 /** Запомнить элемент управления количеством перед перерисовкой. */
@@ -156,7 +199,7 @@ function renderCartLines(state) {
     state.lines
       .map(
         /** Преобразовать элемент в представление для текущего списка. */ (p) =>
-          `<article class="cart-line"><a href="#product/${p.id}" class="product-photo q${p.photo}" role="img" aria-label="${escapeHTML(p.name)}"></a><div><h2><a href="#product/${p.id}">${escapeHTML(p.name)}</a></h2><div class="small muted">${fmt(p.price)} за штуку</div>${purchaseControl(p.id)}</div><b class="price">${fmt(p.price * p.quantity)}</b></article>`,
+          `<article class="cart-line" data-cart-product="${p.id}"><a href="#product/${p.id}" class="product-photo q${p.photo}" role="img" aria-label="${escapeHTML(p.name)}"></a><div><h2><a href="#product/${p.id}">${escapeHTML(p.name)}</a></h2><div class="small muted">${fmt(p.price)} за штуку</div>${purchaseControl(p.id)}</div><b class="price">${fmt(p.price * p.quantity)}</b></article>`,
       )
       .join("") ||
     '<p class="muted">Корзина пуста. <a href="#catalog">Перейти в каталог →</a></p>';

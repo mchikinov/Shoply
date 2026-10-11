@@ -131,3 +131,21 @@ html.cart-open{overflow:hidden}
 .skeleton-price{height:32px;width:50%;margin-top:14px}
 @keyframes skeleton-pulse{50%{opacity:.45}}
 @media(prefers-reduced-motion:reduce){.skeleton-photo,.skeleton-line{animation:none}}
+
+/* Тактильный отклик покупки и счётчика количества. */
+[data-add],.purchase-qty button,.remove-product{
+  transition:transform 140ms ease,background-color 180ms ease,box-shadow 180ms ease;
+  transform-origin:center;
+}
+.purchase-qty span{display:inline-block}
+@media(hover:hover){
+  [data-add]:hover{box-shadow:0 3px 10px #2858b018}
+  .purchase-qty button:not(:disabled):hover{background:#2858b012}
+}
+[data-add]:active,.purchase-qty button:not(:disabled):active,.remove-product:active{
+  transform:scale(.92);
+}
+@media(prefers-reduced-motion:reduce){
+  [data-add],.purchase-qty button,.remove-product{transition:none}
+  [data-add]:active,.purchase-qty button:not(:disabled):active,.remove-product:active{transform:none}
+}
