@@ -42,6 +42,7 @@ async function run() {
         addEventListener(type, callback) {
           this[type] = callback;
         },
+        setAttribute() {},
         querySelector: node,
         reset() {},
         focus() {},
@@ -53,7 +54,10 @@ async function run() {
   status.value = "Ожидает оплаты";
   status.dataset.order = "7";
   const context = {
+    window: { matchMedia: () => ({ matches: false, addEventListener() {} }), addEventListener() {} },
+    localStorage: { getItem: () => null },
     document: {
+      documentElement: node("html"),
       querySelector: node,
       querySelectorAll(selector) {
         return selector === "[data-order]" ? [status] : [];

@@ -81,7 +81,11 @@ async function run(protocol) {
   node("#sort-demo").value = "new";
   const context = {
     document: doc,
-    window: { scrollTo() {}, addEventListener() {}, open() {} },
+    window: {
+      scrollTo() {}, addEventListener() {}, open() {},
+      // В тестах логики отключаем анимации, зависящие от браузерного таймера.
+      matchMedia: (query) => ({ matches: query.includes("prefers-reduced-motion"), addEventListener() {} }),
+    },
     location: {
       protocol,
       hash: "#catalog",

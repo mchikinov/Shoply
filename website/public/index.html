@@ -8,6 +8,7 @@
       name="description"
       content="Визуальные образцы каталога, страницы товара, корзины, оформления и подтверждения заказа Shoply."
     />
+    <script src="assets/js/theme.js"></script>
     <link rel="stylesheet" href="assets/css/tokens.css" />
     <link rel="stylesheet" href="assets/css/store.css" />
   </head>
@@ -37,7 +38,10 @@
           <svg viewBox="0 0 24 24">
             <path d="m3 11 18-7-4 17-6-5-4 3 1-6 10-6-12 8Z" /></svg
           ><span>Поддержка</span></button
-        ><a class="header-link" href="#cart"
+        ><button type="button" class="theme-toggle" id="theme-toggle" aria-label="Включить тёмную тему" aria-pressed="false" title="Включить тёмную тему">
+          <svg class="theme-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 13A8.5 8.5 0 0 1 11 3.5 8.5 8.5 0 1 0 20.5 13Z" /></svg>
+          <svg class="theme-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg>
+        </button><a class="header-link" href="#cart"
           ><svg viewBox="0 0 24 24">
             <path d="M6 7h14l-2 9H8L5 3H2" />
             <circle cx="9" cy="21" r="1" />
