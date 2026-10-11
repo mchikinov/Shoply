@@ -635,20 +635,25 @@
               </p>
             </fieldset>
           </form>
-          <aside class="summary">
-            <h2>Ваш заказ</h2>
-            <div id="checkout-items" class="small muted"></div>
-            <div class="summary-row total">
-              <span>Итого</span><span data-total>6 700 ₽</span>
-            </div>
-            <button class="button" form="demo-order" type="submit" disabled>
-              Оплатить
-            </button>
-            <p class="small muted">
-              Кнопка сохраняет заказ со статусом «Ожидает оплаты». Денежные
-              средства не списываются.
-            </p>
-          </aside>
+          <div class="checkout-sidebar">
+            <section class="summary checkout-products" aria-labelledby="checkout-products-title">
+              <h2 id="checkout-products-title">Товары из корзины</h2>
+              <ul id="checkout-items" class="checkout-items"></ul>
+            </section>
+            <aside class="summary">
+              <h2>Ваш заказ</h2>
+              <div class="summary-row total">
+                <span>Итого</span><span data-total>6 700 ₽</span>
+              </div>
+              <button class="button" form="demo-order" type="submit" disabled>
+                Оплатить
+              </button>
+              <p class="small muted">
+                Кнопка сохраняет заказ со статусом «Ожидает оплаты». Денежные
+                средства не списываются.
+              </p>
+            </aside>
+          </div>
         </div>
       </section>
       <section class="screen" id="success" hidden>

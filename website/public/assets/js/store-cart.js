@@ -217,12 +217,12 @@ function renderCartSummary(state) {
       /** Применить операцию к очередному элементу списка. */ (el) =>
         (el.textContent = fmt(state.total)),
     );
-  $("#checkout-items").textContent = state.lines
+  $("#checkout-items").innerHTML = state.lines
     .map(
-      /** Преобразовать элемент в представление для текущего списка. */ (p) =>
-        p.name + " × " + p.quantity,
+      /** Показать название, количество и стоимость позиции заказа. */ (p) =>
+        `<li class="checkout-item"><div><a href="#product/${p.id}">${escapeHTML(p.name)}</a><div class="small muted">${p.quantity} шт. × ${fmt(p.price)}</div></div><b>${fmt(p.price * p.quantity)}</b></li>`,
     )
-    .join(" · ");
+    .join("");
   $("#checkout-link").hidden = !state.count;
   document.querySelector('[form="demo-order"]').disabled =
     !state.count || !serverReady || submitting;
