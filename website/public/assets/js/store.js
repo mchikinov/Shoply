@@ -60,6 +60,7 @@ document.addEventListener("click", handleStoreClick);
               $("#search-demo").focus(),
           );
         }
+        if (id !== "search-demo") updatePriceRange(id);
         filter();
       },
     ),
@@ -70,10 +71,10 @@ $("#sort-demo").addEventListener("change", filter);
 /** Сбросить фильтры и восстановить сортировку каталога. */
 function resetFilters() {
   category = "Все";
-  ["search-demo", "min-demo", "max-demo"].forEach(
-    /** Применить операцию к очередному элементу списка. */ (id) =>
-      ($("#" + id).value = ""),
-  );
+  $("#search-demo").value = "";
+  $("#min-demo").value = $("#min-demo").min;
+  $("#max-demo").value = $("#max-demo").max;
+  updatePriceRange();
   $("#sort-demo").value = "new";
   document
     .querySelectorAll(".chips button")

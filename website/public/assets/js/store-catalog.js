@@ -1,3 +1,38 @@
+/** Обновить подписи ползунков и не допустить пересечения границ. */
+function updatePriceRange(changedId) {
+  const min = $("#min-demo");
+  const max = $("#max-demo");
+  if (Number(min.value) > Number(max.value)) {
+    if (changedId === "min-demo") min.value = max.value;
+    else max.value = min.value;
+  }
+  const span = Number(max.max) - Number(min.min);
+  const start = span > 0 ? (Number(min.value) - Number(min.min)) / span * 100 : 0;
+  const end = span > 0 ? (Number(max.value) - Number(min.min)) / span * 100 : 100;
+  $("#price-range-track").style.setProperty("--range-start", start + "%");
+  $("#price-range-track").style.setProperty("--range-end", end + "%");
+  // На правой границе нижний бегунок должен оставаться доступным.
+  min.style.zIndex = Number(min.value) === Number(max.max) ? "2" : "1";
+  $("#min-price-value").textContent = fmt(Number(min.value));
+  $("#max-price-value").textContent = fmt(Number(max.value));
+  min.setAttribute("aria-valuetext", fmt(Number(min.value)));
+  max.setAttribute("aria-valuetext", fmt(Number(max.value)));
+}
+
+/** Взять границы цены из полного ассортимента. */
+function initializePriceRange(prices) {
+  const lower = prices.length ? Math.min(...prices) : 0;
+  const upper = prices.length ? Math.max(...prices) : 0;
+  ["min-demo", "max-demo"].forEach((id) => {
+    const slider = $("#" + id);
+    slider.min = lower;
+    slider.max = upper;
+    slider.value = id === "min-demo" ? lower : upper;
+    slider.disabled = lower === upper;
+  });
+  updatePriceRange();
+}
+
 /** store: store-catalog.js; загружается в порядке, указанном в HTML. */
 /** Применить поиск, категорию, диапазон цен и сортировку каталога. */
 function filter() {
@@ -36,6 +71,7 @@ function filter() {
 
 /** Построить карточки товаров и доступные категории каталога. */
 function renderCatalog(list) {
+  initializePriceRange(list.map((p) => Number(p.price)));
   $("#preview-products").innerHTML = list
     .map(
       /** Преобразовать элемент в представление для текущего списка. */ (p) =>

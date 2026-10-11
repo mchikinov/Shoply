@@ -60,21 +60,21 @@
             ><button data-category="Аксессуары">Аксессуары</button>
           </div>
           <div class="filter-row">
-            <span>Цена, ₽</span
-            ><input
-              id="min-demo"
-              type="number"
-              min="0"
-              placeholder="От"
-              aria-label="Цена от"
-            /><span>—</span
-            ><input
-              id="max-demo"
-              type="number"
-              min="0"
-              placeholder="До"
-              aria-label="Цена до"
-            /><button class="reset" id="reset-demo">Сбросить</button
+            <div class="price-filter" role="group" aria-label="Цена">
+              <span class="price-filter-title">Цена, ₽</span>
+              <div class="price-range-control">
+                <div class="price-range-values">
+                  <label for="min-demo">От <output id="min-price-value" for="min-demo">1 500 ₽</output></label>
+                  <label for="max-demo">До <output id="max-price-value" for="max-demo">14 900 ₽</output></label>
+                </div>
+                <div class="price-range-track" id="price-range-track">
+                  <div class="price-range-rail"></div>
+                  <input id="min-demo" type="range" min="1500" max="14900" step="1" value="1500" aria-label="Цена от" />
+                  <input id="max-demo" type="range" min="1500" max="14900" step="1" value="14900" aria-label="Цена до" />
+                </div>
+              </div>
+            </div>
+            <button class="reset" id="reset-demo">Сбросить</button
             ><label class="sort"
               >Сортировка<select id="sort-demo">
                 <option value="new">Сначала новые</option>
