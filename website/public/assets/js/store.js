@@ -7,18 +7,30 @@ function handleStoreClick(event) {
     if (!products[id]) return;
     basket[id] = Math.min(999, (basket[id] || 0) + 1);
     sync();
-    toast("Товар добавлен в корзину");
+    cartToast(basket[id], true);
   }
   button = event.target.closest("[data-quantity]");
   if (button) {
     const id = button.dataset.quantity;
     if (!products[id]) return;
+    const previousQuantity = basket[id] || 0;
     basket[id] = Math.max(
       0,
       Math.min(999, (basket[id] || 0) + Number(button.dataset.delta)),
     );
-    if (!basket[id]) delete basket[id];
+    const quantity = basket[id];
+    if (!quantity) delete basket[id];
     sync();
+    if (quantity !== previousQuantity)
+      cartToast(quantity, quantity > previousQuantity);
+  }
+  button = event.target.closest("[data-remove]");
+  if (button) {
+    const id = button.dataset.remove;
+    if (!products[id] || !basket[id]) return;
+    delete basket[id];
+    sync();
+    cartToast(0, false);
   }
   button = event.target.closest(".chips [data-category]");
   if (button) {

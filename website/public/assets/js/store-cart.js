@@ -8,16 +8,63 @@ function plural(n) {
       : "товаров";
 }
 
-/** Показать временное уведомление покупателю. */
-function toast(text) {
-  $("#preview-toast").textContent = text;
+let toastHovered = false,
+  toastFocused = false;
+
+/** Скрыть уведомление и отменить его таймер. */
+function dismissToast() {
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(
-    /** Очистить уведомление после задержки. */ () =>
-      ($("#preview-toast").textContent = ""),
-    3000,
+  $("#preview-toast").hidden = true;
+}
+
+/** Запустить отсчёт только когда пользователь не взаимодействует с карточкой. */
+function scheduleToastDismissal() {
+  clearTimeout(toastTimer);
+  if (!toastHovered && !toastFocused)
+    toastTimer = setTimeout(dismissToast, 4000);
+}
+
+/** Показать или обновить одну карточку уведомления без перемещения фокуса. */
+function toast(text, detail = "", added = false, icon = "i") {
+  $("#toast-message").textContent = text;
+  $("#toast-detail").textContent = detail;
+  $("#toast-detail").hidden = !detail;
+  $("#preview-toast").dataset.tone = added ? "success" : "neutral";
+  $("#preview-toast .toast-icon").textContent = icon;
+  $("#preview-toast").hidden = false;
+  scheduleToastDismissal();
+}
+
+/** Сообщить об изменении и количестве этого товара, если осталось больше одной штуки. */
+function cartToast(quantity, added) {
+  toast(
+    added ? "Товар добавлен в корзину" : "Товар удалён из корзины",
+    quantity > 1 ? `В корзине: ${quantity} шт.` : "",
+    added,
+    added ? "✓" : "−",
   );
 }
+
+$("#toast-close").addEventListener("click", dismissToast);
+$("#preview-toast").addEventListener("mouseenter", () => {
+  toastHovered = true;
+  clearTimeout(toastTimer);
+});
+$("#preview-toast").addEventListener("mouseleave", () => {
+  toastHovered = false;
+  scheduleToastDismissal();
+});
+$("#preview-toast").addEventListener("focusin", () => {
+  toastFocused = true;
+  clearTimeout(toastTimer);
+});
+$("#preview-toast").addEventListener("focusout", () => {
+  toastFocused = false;
+  scheduleToastDismissal();
+});
+$("#preview-toast").addEventListener("keydown", (event) => {
+  if (event.key === "Escape") dismissToast();
+});
 
 /** Сохранить корзину, сохранив работоспособность при недоступном хранилище. */
 function saveBasket() {
@@ -60,7 +107,7 @@ function purchaseControl(id, detail = false) {
     quantity = basket[id] || 0;
   if (!quantity)
     return `<button class="button${detail ? "" : " secondary"}" data-add="${id}">${detail ? "Добавить в корзину" : "В корзину"}</button>`;
-  return `<div class="qty purchase-qty" role="group" aria-label="Количество ${escapeHTML(p.name)} в корзине"><button type="button" data-quantity="${id}" data-delta="-1" aria-label="Уменьшить количество ${escapeHTML(p.name)}">−</button><span aria-live="polite" aria-atomic="true">${quantity}</span><button type="button" data-quantity="${id}" data-delta="1" aria-label="Увеличить количество ${escapeHTML(p.name)}" ${quantity >= 999 ? "disabled" : ""}>+</button></div>`;
+  return `<div class="purchase-actions"><button type="button" class="remove-product" data-remove="${id}" aria-label="Удалить ${escapeHTML(p.name)} из корзины" title="Удалить из корзины"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"/></svg></button><div class="qty purchase-qty" role="group" aria-label="Количество ${escapeHTML(p.name)} в корзине"><button type="button" data-quantity="${id}" data-delta="-1" aria-label="Уменьшить количество ${escapeHTML(p.name)}">−</button><span aria-live="polite" aria-atomic="true">${quantity}</span><button type="button" data-quantity="${id}" data-delta="1" aria-label="Увеличить количество ${escapeHTML(p.name)}" ${quantity >= 999 ? "disabled" : ""}>+</button></div></div>`;
 }
 
 /** Обновить корзину и элементы покупки, восстановить фокус и сохранить состояние. */
@@ -89,7 +136,7 @@ function sync() {
 function purchaseFocus() {
   const active = document.activeElement;
   const focusHost = active?.closest("[data-purchase], #cart-lines");
-  const focusId = active?.dataset.quantity ?? active?.dataset.add;
+  const focusId = active?.dataset.quantity ?? active?.dataset.add ?? active?.dataset.remove;
   const focusDelta = active?.dataset.delta;
   return { focusHost, focusId, focusDelta };
 }
@@ -109,7 +156,7 @@ function renderCartLines(state) {
     state.lines
       .map(
         /** Преобразовать элемент в представление для текущего списка. */ (p) =>
-          `<article class="cart-line"><a href="#product/${p.id}" class="product-photo q${p.photo}" role="img" aria-label="${escapeHTML(p.name)}"></a><div><h2><a href="#product/${p.id}">${escapeHTML(p.name)}</a></h2><div class="small muted">${fmt(p.price)} за штуку</div><div class="qty"><button data-quantity="${p.id}" data-delta="-1" aria-label="Уменьшить количество ${escapeHTML(p.name)}">−</button><span>${p.quantity}</span><button data-quantity="${p.id}" data-delta="1" aria-label="Увеличить количество ${escapeHTML(p.name)}" ${p.quantity >= 999 ? "disabled" : ""}>+</button></div></div><b class="price">${fmt(p.price * p.quantity)}</b></article>`,
+          `<article class="cart-line"><a href="#product/${p.id}" class="product-photo q${p.photo}" role="img" aria-label="${escapeHTML(p.name)}"></a><div><h2><a href="#product/${p.id}">${escapeHTML(p.name)}</a></h2><div class="small muted">${fmt(p.price)} за штуку</div>${purchaseControl(p.id)}</div><b class="price">${fmt(p.price * p.quantity)}</b></article>`,
       )
       .join("") ||
     '<p class="muted">Корзина пуста. <a href="#catalog">Перейти в каталог →</a></p>';

@@ -158,7 +158,8 @@ async function run(protocol) {
       target: {
         closest(selector) {
           return (selector === "[data-add]" && dataset.add !== undefined) ||
-            (selector === "[data-quantity]" && dataset.quantity !== undefined)
+            (selector === "[data-quantity]" && dataset.quantity !== undefined) ||
+            (selector === "[data-remove]" && dataset.remove !== undefined)
             ? { dataset }
             : null;
         },
@@ -166,17 +167,26 @@ async function run(protocol) {
     });
   clickControl({ add: "0" });
   assert.equal(vm.runInContext("basket[0]", context), 1);
+  assert.equal(node("#preview-toast").hidden, false);
+  assert.equal(node("#toast-message").textContent, "Товар добавлен в корзину");
+  assert.equal(node("#toast-detail").hidden, true);
   assert.match(
     vm.runInContext("purchaseControl(0)", context),
     /data-quantity="0"/,
   );
   clickControl({ quantity: "0", delta: "1" });
   assert.equal(vm.runInContext("basket[0]", context), 2);
+  assert.equal(node("#toast-detail").textContent, "В корзине: 2 шт.");
+  assert.equal(node("#toast-detail").hidden, false);
   assert.equal(node("#basket-count").textContent, 2);
   assert.equal(JSON.parse(storage.get("shoply-basket"))[0], 2);
   clickControl({ quantity: "0", delta: "-1" });
   clickControl({ quantity: "0", delta: "-1" });
   assert.equal(vm.runInContext("cartState().count", context), 0);
+  assert.equal(node("#toast-message").textContent, "Товар удалён из корзины");
+  assert.equal(node("#toast-detail").hidden, true);
+  node("#toast-close").click();
+  assert.equal(node("#preview-toast").hidden, true);
   assert.match(vm.runInContext("purchaseControl(0)", context), /data-add="0"/);
   vm.runInContext("basket={0:999}", context);
   clickControl({ quantity: "0", delta: "1" });
@@ -185,6 +195,12 @@ async function run(protocol) {
     vm.runInContext("purchaseControl(0, true)", context),
     /disabled/,
   );
+  assert.match(vm.runInContext("purchaseControl(0)", context), /data-remove="0"/);
+  clickControl({ remove: "0" });
+  assert.equal(vm.runInContext("cartState().count", context), 0);
+  assert.equal(JSON.parse(storage.get("shoply-basket"))[0], undefined);
+  assert.equal(node("#toast-message").textContent, "Товар удалён из корзины");
+  assert.doesNotMatch(vm.runInContext("purchaseControl(0)", context), /data-remove/);
   vm.runInContext("basket={};sync()", context);
 
   context.location.hash = "#checkout";

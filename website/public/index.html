@@ -713,7 +713,14 @@
     <footer class="wrap">
       <span>Shoply</span><span><a href="admin.html">Админка</a></span>
     </footer>
-    <div id="preview-toast" class="toast" role="status"></div>
+    <div id="preview-toast" class="toast" hidden>
+      <span class="toast-icon" aria-hidden="true"></span>
+      <div class="toast-copy" role="status" aria-live="polite" aria-atomic="true">
+        <div id="toast-message" class="toast-message"></div>
+        <div id="toast-detail" class="toast-detail" hidden></div>
+      </div>
+      <button type="button" id="toast-close" class="toast-close" aria-label="Закрыть уведомление">×</button>
+    </div>
     <script src="assets/js/products.js"></script>
     <script src="assets/js/shared.js"></script>
     <script src="assets/js/store-state.js"></script>
