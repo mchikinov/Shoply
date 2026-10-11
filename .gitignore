@@ -1,0 +1,26 @@
+# Локальные данные магазина и загруженные владельцем изображения
+website/var/
+website/public/assets/uploads/*
+!website/public/assets/uploads/.gitkeep
+
+# Пароли, локальные настройки и виртуальные окружения
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+
+# Python, ОС и редакторы
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# Исторические копии и исходная среда (остаются локально)
+codex/archive/

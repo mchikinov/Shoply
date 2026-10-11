@@ -1,0 +1,28 @@
+name: Checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Backend and persistence
+        run: python3 tests/test_shop.py
+      - name: Frontend logic
+        run: node tests/test_frontend.cjs
+      - name: JavaScript syntax
+        run: |
+          node --check public/assets/js/store.js
+          node --check public/assets/js/admin.js
