@@ -64,3 +64,58 @@ html.cart-open{overflow:hidden}
 @keyframes cart-backdrop-in{from{background:transparent}to{background:#18223166}}
 @media(max-width:650px){.cart-panel{padding:20px}}
 @media(prefers-reduced-motion:reduce){.cart-drawer,.cart-panel,.cart-drawer.is-closing,.cart-drawer.is-closing .cart-panel{animation:none}}
+
+/* Catalog controls reflow into grid rows as available space changes. */
+.filter-panel{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));align-items:center}
+.filter-panel .filter-row{display:contents}
+.filter-panel .chips{flex-wrap:wrap;min-width:0}
+.filter-panel .chips button{white-space:nowrap}
+.filter-panel .price-filter{min-width:0;gap:10px}
+.filter-panel .price-filter-title{white-space:nowrap}
+.filter-panel .price-range-control{flex:1;min-width:0}
+.filter-panel .reset{justify-self:start}
+.filter-panel .sort{min-width:0;margin-left:0}
+.filter-panel .sort select{min-width:0;flex:1}
+@media(max-width:650px){
+  .filter-panel .price-filter{width:auto;flex-direction:row;align-items:center;gap:10px}
+  .filter-panel .sort{width:auto;margin-top:0}
+  .filter-panel .sort select{margin-left:0}
+}
+
+/* Translucent bubbles separate the catalog controls. */
+.filter-panel{gap:12px;padding:12px 2px;background:transparent;border:0;border-radius:0}
+.filter-panel .chips{gap:6px}
+.filter-panel .chips button,
+.filter-panel .price-filter,
+.filter-panel .reset,
+.filter-panel .sort{border:1px solid #ffffffb3;border-radius:999px;background:#edf1f799;box-shadow:inset 0 1px 0 #ffffffb3,0 2px 8px #18223108;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.filter-panel .chips button{padding:10px 14px}
+.filter-panel .chips button.active{background:var(--color-accent);border-color:var(--color-accent);color:white}
+.filter-panel .chips button:not(.active):hover,
+.filter-panel .reset:hover{background:#e1e8f2cc}
+.filter-panel .price-filter{padding:6px 16px}
+.filter-panel .price-range-control{width:180px}
+.filter-panel .reset{padding:10px 14px}
+.filter-panel .sort{padding:5px 14px;gap:8px}
+.filter-panel .sort select{background:#ffffff80;border-color:#ffffffb3;border-radius:999px;padding:7px 10px}
+@media(max-width:650px){
+  .filter-panel{gap:10px;padding:10px 2px}
+  .filter-panel .chips button{padding:9px 12px}
+  .filter-panel .price-filter{padding:6px 14px}
+}
+
+/* Categories share one translucent bubble. */
+.filter-panel .chips{padding:5px;border:1px solid #ffffffb3;border-radius:999px;background:#edf1f799;box-shadow:inset 0 1px 0 #ffffffb3,0 2px 8px #18223108;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.filter-panel .chips button{border-color:transparent;background:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none}
+.filter-panel .chips button.active{background:var(--color-accent);border-color:var(--color-accent);color:white}
+
+.filter-panel .chips{border-radius:26px}
+
+/* Reserve enough room for a single category row on desktop. */
+@media(min-width:651px){
+  .filter-panel .chips{grid-column:1/-1;flex-wrap:nowrap;justify-self:start}
+}
+@media(min-width:1150px){
+  .filter-panel{grid-template-columns:max-content minmax(240px,1fr) max-content minmax(240px,1fr)}
+  .filter-panel .chips{grid-column:auto}
+}
