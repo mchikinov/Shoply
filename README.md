@@ -6,7 +6,8 @@
 
 ```text
 website/                     приложение магазина
-  backend/server.py          HTTP API, вход администратора, SQLite
+  backend/server.py          точка запуска
+  backend/                   HTTP-обработчик, сервисы API, SQLite и валидация
   public/                    единственная публичная директория
     index.html               витрина и путь заказа
     admin.html               админка
@@ -44,6 +45,7 @@ python3 website/backend/server.py
 ```sh
 python3 website/tests/test_shop.py
 node website/tests/test_frontend.cjs
+node website/tests/test_admin.cjs
 ```
 
 GitHub Actions запускает эти проверки при push и pull request. Тесты используют временную базу, без реальных заказов.

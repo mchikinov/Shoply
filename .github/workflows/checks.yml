@@ -22,7 +22,10 @@ jobs:
         run: python3 tests/test_shop.py
       - name: Frontend logic
         run: node tests/test_frontend.cjs
+      - name: Admin logic
+        run: node tests/test_admin.cjs
       - name: JavaScript syntax
         run: |
-          node --check public/assets/js/store.js
-          node --check public/assets/js/admin.js
+          for file in public/assets/js/*.js tests/*.cjs; do
+            node --check "$file"
+          done
