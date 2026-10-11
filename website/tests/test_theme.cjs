@@ -20,6 +20,7 @@ function boot({ saved = null, dark = false, blocked = false } = {}) {
   };
   vm.runInNewContext(source, {
     document,
+    setTimeout: () => 1, clearTimeout() {},
     window: { matchMedia: () => media, addEventListener(type, handler) { events[type] = handler; } },
     localStorage: {
       getItem(key) { if (blocked) throw Error('Storage blocked'); return storage.get(key) ?? null; },
@@ -31,11 +32,13 @@ function boot({ saved = null, dark = false, blocked = false } = {}) {
 }
 let app = boot({ dark: true });
 assert.equal(app.root.dataset.theme, 'dark');
+assert.equal(app.root.dataset.themeTransition, undefined);
 assert.equal(app.attributes['aria-pressed'], 'true');
 app.media.matches = false;
 app.media.change({ matches: false });
 assert.equal(app.root.dataset.theme, 'light');
 app.button.click();
+assert.equal(app.root.dataset.themeTransition, "true");
 assert.equal(app.storage.get('shoply-theme'), 'dark');
 assert.equal(app.attributes['aria-label'], 'Включить светлую тему');
 app.media.change({ matches: false });

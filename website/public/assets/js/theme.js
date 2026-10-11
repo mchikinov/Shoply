@@ -5,7 +5,18 @@
   let saved = null;
   try { saved = localStorage.getItem('shoply-theme'); } catch (_) {}
   if (saved !== 'light' && saved !== 'dark') saved = null;
+  let ready = false;
+  let transitionTimer;
   const apply = (theme) => {
+    if (ready && root.dataset.theme !== theme) {
+      clearTimeout(transitionTimer);
+      root.dataset.themeTransition = "true";
+      // Установить переходы до изменения значений палитры.
+      void root.offsetWidth;
+      transitionTimer = setTimeout(() => {
+        delete root.dataset.themeTransition;
+      }, 360);
+    }
     root.dataset.theme = theme;
     const button = document.querySelector('#theme-toggle');
     if (!button) return;
@@ -18,6 +29,7 @@
   apply(saved || (preference && preference.matches ? 'dark' : 'light'));
   document.addEventListener('DOMContentLoaded', () => {
     apply(root.dataset.theme);
+    ready = true;
     document.querySelector('#theme-toggle')?.addEventListener('click', () => {
       saved = root.dataset.theme === 'dark' ? 'light' : 'dark';
       try { localStorage.setItem('shoply-theme', saved); } catch (_) {}
