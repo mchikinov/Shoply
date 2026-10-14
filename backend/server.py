@@ -1,18 +1,26 @@
 #!/usr/bin/env python3
-"""Точка запуска локального Shoply; только стандартная библиотека Python 3.10+."""
+"""Точка запуска Shoply локально или за HTTPS-прокси; стандартная библиотека Python."""
 
 import os
 from http.server import ThreadingHTTPServer
-from database import init
+from database import init, connect, config
 from handler import Handler
+from config import HOST, PUBLIC_ORIGIN, SETUP_TOKEN, validate_runtime
 
 
 def main():
-    """Подготовить базу и запустить HTTP-сервер на loopback-интерфейсе."""
+    """Проверить настройки и запустить магазин; локально использовать loopback."""
+    validate_runtime()
     init()
+    if PUBLIC_ORIGIN:
+        with connect() as db:
+            if config(db, "admin") is None and len(SETUP_TOKEN) < 32:
+                raise ValueError(
+                    "До создания администратора задайте SHOPLY_SETUP_TOKEN (от 32 символов)."
+                )
     port = int(os.environ.get("SHOPLY_PORT", "8765"))
-    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
-    print(f"Shoply: http://127.0.0.1:{port}/  Админка: /admin.html", flush=True)
+    server = ThreadingHTTPServer((HOST, port), Handler)
+    print(f"Shoply: {PUBLIC_ORIGIN or f'http://{HOST}:{port}'}/  Админка: /admin.html", flush=True)
     server.serve_forever()
 
 

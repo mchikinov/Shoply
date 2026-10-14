@@ -1,5 +1,6 @@
 """HTTP-адаптер локального магазина."""
 
+import hmac
 import json
 import mimetypes
 import sqlite3
@@ -7,7 +8,7 @@ import time
 from http.server import BaseHTTPRequestHandler
 from http.cookies import SimpleCookie
 from urllib.parse import urlsplit, unquote
-from config import PUBLIC, STATUSES, SESSIONS
+from config import PUBLIC, STATUSES, SESSIONS, PUBLIC_ORIGIN, SETUP_TOKEN, SECURE_COOKIE
 from database import connect, config
 from auth_service import sign_in
 from order_service import create_order, update_status, list_orders
@@ -50,6 +51,9 @@ class Handler(BaseHTTPRequestHandler):
         """Обработать чтение API или безопасную раздачу публичного файла."""
         path = unquote(urlsplit(self.path).path)
         with connect() as db:
+            if path == "/api/health":
+                db.execute("SELECT 1 FROM config LIMIT 1").fetchone()
+                return self.json(200, dict(ok=True))
             if path == "/api/shop":
                 products = list_products(db)
                 return self.json(
@@ -128,14 +132,19 @@ class Handler(BaseHTTPRequestHandler):
     def read_mutation(self):
         """Проверить источник, тип и размер запроса и прочитать JSON-объект."""
         host = self.headers.get("Host", "")
-        if host not in {
+        allowed_hosts = {urlsplit(PUBLIC_ORIGIN).netloc} if PUBLIC_ORIGIN else {
             f"127.0.0.1:{self.server.server_port}",
             f"localhost:{self.server.server_port}",
-        }:
+        }
+        if host not in allowed_hosts:
             return (403, dict(error="Недопустимый адрес сервера."), None)
         origin = self.headers.get("Origin")
-        if origin and origin != "http://" + host:
+        if origin and origin != (PUBLIC_ORIGIN or "http://" + host):
             return (403, dict(error="Недопустимый источник запроса."), None)
+        if urlsplit(self.path).path == "/api/setup" and SETUP_TOKEN:
+            supplied = self.headers.get("X-Shoply-Setup-Token", "")
+            if not hmac.compare_digest(supplied.encode(), SETUP_TOKEN.encode()):
+                return (403, dict(error="Требуется секрет первоначальной настройки."), None)
         if not self.headers.get("Content-Type", "").startswith("application/json"):
             return (415, dict(error="Ожидается JSON."), None)
         size = int(self.headers.get("Content-Length", "0"))
@@ -164,7 +173,8 @@ class Handler(BaseHTTPRequestHandler):
                 return response(
                     200,
                     dict(ok=True),
-                    "shoply_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0",
+                    "shoply_session=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0"
+                    + ("; Secure" if SECURE_COOKIE else ""),
                 )
             if path == "/api/admin/settings":
                 return response(*save_settings(db, body))

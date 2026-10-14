@@ -5,7 +5,7 @@ import hmac
 import json
 import secrets
 import time
-from config import SESSIONS, ATTEMPTS
+from config import SESSIONS, ATTEMPTS, SECURE_COOKIE
 from database import config
 from validation import text
 from response import response
@@ -50,7 +50,8 @@ def sign_in(db, body, path, ip):
     return response(
         200,
         dict(ok=True),
-        f"shoply_session={token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200",
+        f"shoply_session={token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200"
+        + ("; Secure" if SECURE_COOKIE else ""),
     )
 
 
