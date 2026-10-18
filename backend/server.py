@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Точка запуска Shoply локально или за HTTPS-прокси; стандартная библиотека Python."""
+"""Точка запуска FastAPI-приложения Shoply локально или за HTTPS-прокси."""
 
 import os
-from http.server import ThreadingHTTPServer
-from database import init, connect, config
-from handler import Handler
+import uvicorn
+
+from app import app
+from database import config, connect, init
 from config import HOST, PUBLIC_ORIGIN, SETUP_TOKEN, validate_runtime
 
 
@@ -19,9 +20,8 @@ def main():
                     "До создания администратора задайте SHOPLY_SETUP_TOKEN (от 32 символов)."
                 )
     port = int(os.environ.get("SHOPLY_PORT", "8765"))
-    server = ThreadingHTTPServer((HOST, port), Handler)
     print(f"Shoply: {PUBLIC_ORIGIN or f'http://{HOST}:{port}'}/  Админка: /admin.html", flush=True)
-    server.serve_forever()
+    uvicorn.run(app, host=HOST, port=port, proxy_headers=False)
 
 
 if __name__ == "__main__":

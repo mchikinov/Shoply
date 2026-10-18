@@ -8,5 +8,11 @@ node -e 'const [major, minor] = process.versions.node.split(".").map(Number); if
 if [[ ! -d node_modules ]]; then
   npm ci || exit 1
 fi
+if [[ ! -x .venv/bin/python3 ]]; then
+  python3 -m venv .venv || exit 1
+fi
+if ! .venv/bin/python3 -c 'import fastapi, uvicorn' >/dev/null 2>&1; then
+  .venv/bin/python3 -m pip install -r requirements.txt || exit 1
+fi
 npm run build || exit 1
-exec python3 backend/server.py
+exec .venv/bin/python3 backend/server.py

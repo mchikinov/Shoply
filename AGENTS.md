@@ -9,8 +9,8 @@
 
 ## Архитектура и стиль
 
-- Стек: Vue 3 + TypeScript + Pinia + Vue Router + Vite, существующий CSS, Python 3.10+ стандартной библиотеки, SQLite. Node.js 22.13+ (рекомендуется 24 LTS) нужен для сборки и тестов; сторонних серверных пакетов нет.
-- `backend/server.py` запускает сервер; `handler.py` отвечает за HTTP; сервисы — за предметную логику; `database.py` — за транзакции; `validation.py` — за проверку входных данных. Сервисы не пишут в сокет.
+- Стек: Vue 3 + TypeScript + Pinia + Vue Router + Vite, существующий CSS, Python 3.10+, FastAPI, Pydantic, Uvicorn и SQLite. Node.js 22.13+ (рекомендуется 24 LTS) нужен для сборки и тестов.
+- `backend/server.py` запускает Uvicorn; `app.py` отвечает за HTTP и FastAPI-маршруты; `schemas.py` — за схемы запросов; сервисы — за предметную логику; `database.py` — за транзакции; `validation.py` — за предметную проверку входных данных. Сервисы не зависят от FastAPI.
 - Раздавайте только `public/`. Локальный сервер слушает `127.0.0.1`. В контейнере `SHOPLY_HOST=0.0.0.0` допустим только с явно заданным HTTPS-адресом `SHOPLY_PUBLIC_ORIGIN`; настройки Dokploy описаны в `docs/dokploy.md`.
 - Фронтенд организован по слоям: `views/`, `components/`, `router/`, `stores/`, `composables/`, `services/`, `types/`, `utils/`, `assets/styles/` внутри `frontend/src/`. Страницы и компоненты разделяются на `storefront/` и `admin/`, общие компоненты — `common/`. Две точки входа (`main.ts`, `admin.ts`) имеют отдельные экземпляры Pinia и Router. Сохраняйте совместимость старых hash-ссылок; новые ссылки используют `#/…` и `RouterLink`. Не редактируйте собранные HTML вручную.
 - Общее состояние размещайте в Pinia setup stores, локальные поля форм — в компонентах или composables. Для деструктуризации состояния Pinia используйте `storeToRefs`. API-сервисы не импортируют хранилища и не управляют UI; защищённые действия админки проходят через `auth.run` для обработки 401. Ориентиры и примеры расположения кода описаны в README.
@@ -29,6 +29,7 @@
 ```sh
 npm ci
 npm run build
+python3 -m pip install -r requirements.txt
 python3 backend/server.py
 ```
 

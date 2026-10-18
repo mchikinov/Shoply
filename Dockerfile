@@ -17,6 +17,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 RUN groupadd --gid 10001 shoply && useradd --uid 10001 --gid shoply --no-create-home shoply
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
 COPY --chown=shoply:shoply backend/ backend/
 COPY --chown=shoply:shoply public/ public/
 COPY --from=frontend --chown=shoply:shoply /app/public/index.html /app/public/admin.html public/
