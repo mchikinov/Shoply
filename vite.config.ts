@@ -6,7 +6,8 @@ const backend = 'http://127.0.0.1:' + (process.env.SHOPLY_PORT || '8765');
 
 export default defineConfig({
   root: 'frontend',
-  publicDir: false,
+  resolve: { alias: { '@': resolve('frontend/src') } },
+  publicDir: '../public',
   plugins: [vue()],
   server: {
     host: '127.0.0.1',
@@ -33,6 +34,8 @@ export default defineConfig({
   build: {
     outDir: '../.frontend-build',
     emptyOutDir: true,
+    // public содержит пользовательские файлы; публикуются только результаты сборки.
+    copyPublicDir: false,
     assetsDir: 'assets/build',
     rollupOptions: {
       input: {

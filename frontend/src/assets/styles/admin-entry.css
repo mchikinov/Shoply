@@ -1,0 +1,5 @@
+/* Порядок сохраняет каскад: токены → страница → кнопки → переключатель темы. */
+@import './tokens.css';
+@import './admin.css';
+@import './buttons.css';
+@import './theme.css';

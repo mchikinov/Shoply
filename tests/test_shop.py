@@ -74,7 +74,9 @@ class ShopTest(unittest.TestCase):
                 # Каждая новая зависимость HTML должна реально раздаваться сервером.
                 for page in ("index.html", "admin.html"):
                     markup = (ROOT / "public" / page).read_text()
-                    for script in re.findall(r'<script[^>]*src="([^"]+)"', markup):
+                    for script in re.findall(
+                        r'<(?:script|link)\b[^>]*(?:src|href)="([^"]+)"', markup
+                    ):
                         with urlopen(base + "/" + script.lstrip("/")) as resource:
                             self.assertEqual(resource.status, 200)
                 # Ошибки HTTP-проверки не должны попадать в сервисы изменений.
@@ -104,7 +106,6 @@ class ShopTest(unittest.TestCase):
                     "/backend/server.py",
                     "/var/data/shoply.sqlite3",
                     "/codex/BRIEF.md",
-                    "/assets/css/store.css",
                     "/assets/js/products.js",
                     "/assets/fonts/InterVariable.woff2",
                 ]:

@@ -1,0 +1,20 @@
+@font-face {
+  font-family: Inter;
+  src: url('/assets/fonts/InterVariable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+:root {
+  --color-bg: #fff;
+  --color-surface: #f5f6f8;
+  --color-text: #182231;
+  --color-muted: #707987;
+  --color-accent: #2864e8;
+  --color-accent-text: #fff;
+  --color-line: #e7eaf0;
+  --font-body: Inter, 'Helvetica Neue', Arial, sans-serif;
+  --font-heading: var(--font-body);
+  --container: 1280px;
+  --radius: 12px;
+}

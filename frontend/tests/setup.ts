@@ -1,3 +1,4 @@
+import { createPinia, disposePinia, setActivePinia, type Pinia } from 'pinia';
 import { afterEach, beforeEach, vi } from 'vitest';
 
 export const media = {
@@ -5,7 +6,10 @@ export const media = {
   addEventListener: vi.fn(),
   removeEventListener: vi.fn(),
 };
+let pinia: Pinia;
 beforeEach(() => {
+  pinia = createPinia();
+  setActivePinia(pinia);
   localStorage.clear();
   document.documentElement.removeAttribute('style');
   document.documentElement.dataset.theme = 'light';
@@ -29,6 +33,7 @@ beforeEach(() => {
   media.matches = false;
 });
 afterEach(() => {
+  disposePinia(pinia);
   vi.unstubAllGlobals();
   document.body.innerHTML = '';
 });

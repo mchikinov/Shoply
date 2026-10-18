@@ -1,0 +1,25 @@
+/* Общий отклик кнопок витрины и админки, включая кнопки-ссылки. */
+:is(button, a.button, a.header-link, .floating-cart) {
+  transition:
+    transform 140ms ease,
+    background-color 180ms ease,
+    box-shadow 180ms ease;
+  transform-origin: center;
+  touch-action: manipulation;
+}
+:is(button, a.button, a.header-link, .floating-cart):not(:disabled):not(
+    [aria-disabled='true']
+  ):active {
+  transform: scale(0.96);
+  transition-duration: 70ms;
+}
+@media (prefers-reduced-motion: reduce) {
+  :is(button, a.button, a.header-link, .floating-cart) {
+    transition: none;
+  }
+  :is(button, a.button, a.header-link, .floating-cart):not(:disabled):not(
+      [aria-disabled='true']
+    ):active {
+    transform: none;
+  }
+}

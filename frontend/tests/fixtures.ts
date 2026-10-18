@@ -1,4 +1,4 @@
-import type { Product, Settings } from '../src/shared/types';
+import type { Product, Settings } from '@/types/api';
 export const product: Product = {
   id: 0,
   name: 'Лампа <Сфера>',

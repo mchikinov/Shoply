@@ -1,7 +1,7 @@
 import './setup';
 import { describe, expect, it, vi } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
-import App from '../src/admin/App.vue';
+import { mountAdmin } from './apps';
 import { product, settings, response } from './fixtures';
 
 function mockApi({ authenticated = false, setup = true } = {}) {
@@ -66,7 +66,7 @@ async function tab(wrapper: ReturnType<typeof mount>, id: string) {
 describe('Админка', () => {
   it('создаёт администратора, входит и выходит через существующий API', async () => {
     const mock = mockApi();
-    const wrapper = mount(App);
+    const wrapper = mountAdmin();
     await flushPromises();
     expect(wrapper.get('#login-title').text()).toBe('Создайте администратора');
     await wrapper.get('[name=username]').setValue('test-admin');
@@ -86,7 +86,7 @@ describe('Админка', () => {
 
   it('сохраняет оформление и редактирует товар, фото и свойства', async () => {
     const mock = mockApi({ authenticated: true });
-    const wrapper = mount(App, { attachTo: document.body });
+    const wrapper = mountAdmin({ attachTo: document.body });
     await flushPromises();
     await wrapper.get('#settings-form [name=name]').setValue('Мой магазин');
     await wrapper.get('#settings-form').trigger('submit');
@@ -129,7 +129,7 @@ describe('Админка', () => {
 
   it('экранирует текст заказа, откатывает ошибку статуса и обрабатывает 401', async () => {
     const mock = mockApi({ authenticated: true });
-    const wrapper = mount(App);
+    const wrapper = mountAdmin();
     await flushPromises();
     await tab(wrapper, 'orders');
     expect(wrapper.get('#order-list').text()).toContain('<Покупатель>');
@@ -152,7 +152,7 @@ describe('Админка', () => {
 
   it('загружает фотографию в JSON и сохраняет её порядок в форме', async () => {
     const mock = mockApi({ authenticated: true });
-    const wrapper = mount(App);
+    const wrapper = mountAdmin();
     await flushPromises();
     await tab(wrapper, 'products');
     await wrapper.get('#new-product').trigger('click');
@@ -176,4 +176,37 @@ describe('Админка', () => {
     expect(wrapper.findAll('.photo-item')).toHaveLength(0);
     wrapper.unmount();
   });
+});
+
+it('сохраняет черновики админки между разделами и принимает старые ссылки', async () => {
+  mockApi({ authenticated: true });
+  window.history.replaceState({}, '', '/admin.html#products');
+  const wrapper = mountAdmin();
+  await flushPromises();
+  expect(location.hash).toBe('#/products');
+  await wrapper.get('#product-list button').trigger('click');
+  await flushPromises();
+  await wrapper
+    .get('#product-form [name=name]')
+    .setValue('Несохранённая лампа');
+  await tab(wrapper, 'settings');
+  await wrapper
+    .get('#settings-form [name=name]')
+    .setValue('Черновик оформления');
+  await tab(wrapper, 'products');
+  expect(wrapper.get('#product-form [name=name]').element).toHaveProperty(
+    'value',
+    'Несохранённая лампа',
+  );
+  await tab(wrapper, 'settings');
+  expect(wrapper.get('#settings-form [name=name]').element).toHaveProperty(
+    'value',
+    'Черновик оформления',
+  );
+  window.location.hash = '#orders';
+  await vi.waitFor(() =>
+    expect(wrapper.find('#order-list').exists()).toBe(true),
+  );
+  expect(location.hash).toBe('#/orders');
+  wrapper.unmount();
 });

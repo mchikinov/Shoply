@@ -1,7 +1,7 @@
 import './setup';
 import { expect, it, vi } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
-import ThemeToggle from '../src/shared/components/ThemeToggle.vue';
+import ThemeToggle from '@/components/common/ThemeToggle.vue';
 import { media } from './setup';
 it('выбирает системную тему, сохраняет выбор и синхронизирует вкладки', async () => {
   media.matches = true;
@@ -40,7 +40,14 @@ it('применяет тему до CSS на обеих HTML-точках вх�
       'utf8',
     );
     expect(html.indexOf('<script>')).toBeLessThan(
-      html.indexOf('rel="stylesheet"'),
+      html.search(/<script\s+type="module"/),
+    );
+    const built = readFileSync(
+      new URL('../../public/' + page + '.html', import.meta.url),
+      'utf8',
+    );
+    expect(built.indexOf('<script>')).toBeLessThan(
+      built.indexOf('rel="stylesheet"'),
     );
     const script = html.match(/<script>([\s\S]*?)<\/script>/)![1];
     for (const saved of ['dark', 'light', 'invalid', null]) {
