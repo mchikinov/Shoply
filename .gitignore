@@ -21,3 +21,8 @@ Thumbs.db
 .idea/
 .vscode/
 *.log
+
+# Frontend dependencies and generated assets
+node_modules/
+.frontend-build/
+public/assets/build/

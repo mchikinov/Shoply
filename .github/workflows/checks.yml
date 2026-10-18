@@ -17,7 +17,12 @@ jobs:
           python-version: '3.11'
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
+          cache: npm
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Typecheck and build frontend
+        run: npm run build
       - name: Backend and persistence
         run: python3 tests/test_shop.py
       - name: Frontend logic
@@ -30,7 +35,7 @@ jobs:
         run: python3 tests/test_deployment.py
       - name: JavaScript syntax
         run: |
-          for file in public/assets/js/*.js tests/*.cjs; do
+          for file in public/assets/js/*.js tests/*.cjs scripts/*.mjs; do
             node --check "$file"
           done
       - name: Whitespace

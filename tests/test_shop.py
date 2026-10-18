@@ -75,7 +75,7 @@ class ShopTest(unittest.TestCase):
                 for page in ("index.html", "admin.html"):
                     markup = (ROOT / "public" / page).read_text()
                     for script in re.findall(r'<script[^>]*src="([^"]+)"', markup):
-                        with urlopen(base + "/" + script) as resource:
+                        with urlopen(base + "/" + script.lstrip("/")) as resource:
                             self.assertEqual(resource.status, 200)
                 # Ошибки HTTP-проверки не должны попадать в сервисы изменений.
                 for raw, headers, expected in [
@@ -105,7 +105,7 @@ class ShopTest(unittest.TestCase):
                     "/var/data/shoply.sqlite3",
                     "/codex/BRIEF.md",
                     "/assets/css/store.css",
-                    "/assets/js/store.js",
+                    "/assets/js/products.js",
                     "/assets/fonts/InterVariable.woff2",
                 ]:
                     if path.startswith("/assets/"):

@@ -17,3 +17,6 @@ tests
 docs
 *.log
 .DS_Store
+
+.frontend-build
+public/assets/build

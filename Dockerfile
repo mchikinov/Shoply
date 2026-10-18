@@ -1,3 +1,12 @@
+FROM node:24-slim AS frontend
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY frontend/ frontend/
+COPY vite.config.ts tsconfig.json ./
+COPY scripts/publish_frontend.mjs scripts/publish_frontend.mjs
+RUN npm run build
+
 FROM python:3.11-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -10,6 +19,8 @@ WORKDIR /app
 RUN groupadd --gid 10001 shoply && useradd --uid 10001 --gid shoply --no-create-home shoply
 COPY --chown=shoply:shoply backend/ backend/
 COPY --chown=shoply:shoply public/ public/
+COPY --from=frontend --chown=shoply:shoply /app/public/index.html /app/public/admin.html public/
+COPY --from=frontend --chown=shoply:shoply /app/public/assets/build/ public/assets/build/
 RUN mkdir -p var/data public/assets/uploads && chown -R shoply:shoply var public/assets/uploads
 USER shoply
 EXPOSE 8765
