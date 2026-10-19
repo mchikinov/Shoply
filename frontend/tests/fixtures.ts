@@ -8,7 +8,6 @@ export const product: Product = {
   photos: [],
   properties: [{ name: 'Материал', description: 'Металл' }],
   description: 'Описание лампы',
-  demo: true,
 };
 export const settings: Settings = {
   name: 'Shoply',

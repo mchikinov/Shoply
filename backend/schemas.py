@@ -47,7 +47,6 @@ class ProductWrite(RequestModel):
     photo: int = 0
     photos: list[str] = Field(default_factory=list)
     properties: list[dict[str, Any]] = Field(default_factory=list)
-    demo: bool = False
 
 
 class ProductDelete(RequestModel):
@@ -108,7 +107,6 @@ class ProductResponse(RequestModel):
     photo: int
     photos: list[str]
     properties: list[dict[str, Any]]
-    demo: bool
 
 
 class ShopResponse(BaseModel):

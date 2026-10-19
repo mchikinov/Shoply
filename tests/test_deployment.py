@@ -117,7 +117,15 @@ class DeploymentTest(unittest.TestCase):
                 self.assertEqual(status, 201)
                 photo_bytes = call("/" + uploaded["path"])[1]
                 self.assertIsInstance(photo_bytes, bytes)
+                self.assertEqual(call("/api/shop")[1]["products"], [])
+                status, saved, _ = call(
+                    "/api/admin/products",
+                    {"name": "Товар проверки", "category": "Проверка", "price": 100},
+                    cookie,
+                )
+                self.assertEqual(status, 200)
                 product = call("/api/shop")[1]["products"][0]
+                self.assertEqual(product["id"], saved["id"])
                 status, order, _ = call("/api/orders", {
                     "token": "deployment-order-test", "fullname": "Test Buyer",
                     "phone": "+7 999 123 45 67", "delivery": "pickup",

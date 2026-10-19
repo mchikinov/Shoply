@@ -56,11 +56,6 @@ function reset() {
   >
     <div class="heading-row">
       <h1>Каталог товаров</h1>
-      <span
-        v-if="products.some((product) => product.demo)"
-        class="demo"
-        >Демонстрационный каталог</span
-      >
     </div>
     <CatalogFilters
       v-model:min="min"
@@ -74,7 +69,7 @@ function reset() {
       @reset="reset"
     />
     <div class="result-row">
-      <span id="found-demo"
+      <span id="catalog-count"
         >{{ filtered.length }} {{ plural(filtered.length) }}</span
       >
       <span>Цены указаны в рублях</span>

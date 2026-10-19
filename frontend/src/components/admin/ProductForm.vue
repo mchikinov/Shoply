@@ -85,13 +85,6 @@ watch([saving, uploading], ([saving, uploading]) =>
         maxlength="10000"
       ></textarea>
     </label>
-    <label class="checkbox">
-      <input
-        v-model="form.demo"
-        name="demo"
-        type="checkbox"
-      />Демонстрационный товар
-    </label>
     <PhotoEditor
       v-model="form.photos"
       @busy="uploading = $event"

@@ -67,19 +67,19 @@ function updateRange(event: Event, bound: 'min' | 'max') {
         <span class="price-filter-title">Цена, ₽</span>
         <div class="price-range-control">
           <div class="price-range-values">
-            <label for="min-demo"
+            <label for="price-min"
               >От
               <output
                 id="min-price-value"
-                for="min-demo"
+                for="price-min"
                 >{{ formatPrice(min) }}</output
               >
             </label>
-            <label for="max-demo"
+            <label for="price-max"
               >До
               <output
                 id="max-price-value"
-                for="max-demo"
+                for="price-max"
                 >{{ formatPrice(max) }}</output
               >
             </label>
@@ -91,7 +91,7 @@ function updateRange(event: Event, bound: 'min' | 'max') {
           >
             <div class="price-range-rail"></div>
             <input
-              id="min-demo"
+              id="price-min"
               v-range="min"
               type="range"
               :min="lower"
@@ -104,7 +104,7 @@ function updateRange(event: Event, bound: 'min' | 'max') {
               @input="updateRange($event, 'min')"
             />
             <input
-              id="max-demo"
+              id="price-max"
               v-range="max"
               type="range"
               :min="lower"
@@ -119,7 +119,7 @@ function updateRange(event: Event, bound: 'min' | 'max') {
         </div>
       </div>
       <button
-        id="reset-demo"
+        id="filters-reset"
         class="reset"
         :disabled="loading"
         @click="emit('reset')"
@@ -128,7 +128,7 @@ function updateRange(event: Event, bound: 'min' | 'max') {
       </button>
       <label class="sort"
         >Сортировка<select
-          id="sort-demo"
+          id="catalog-sort"
           v-model="sort"
           :disabled="loading"
         >

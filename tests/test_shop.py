@@ -106,7 +106,6 @@ class ShopTest(unittest.TestCase):
                     "/backend/server.py",
                     "/var/data/shoply.sqlite3",
                     "/codex/BRIEF.md",
-                    "/assets/js/products.js",
                     "/assets/fonts/InterVariable.woff2",
                 ]:
                     if path.startswith("/assets/"):
@@ -136,7 +135,7 @@ class ShopTest(unittest.TestCase):
                     )[0],
                     409,
                 )
-                self.assertEqual(call("/api/shop")[1]["products"].__len__(), 22)
+                self.assertEqual(call("/api/shop")[1]["products"], [])
                 p = dict(
                     name="Тестовый товар",
                     category="Новая категория",
@@ -146,7 +145,6 @@ class ShopTest(unittest.TestCase):
                         dict(name="Любое свойство", description="Любое описание")
                     ],
                     photos=[],
-                    demo=True,
                 )
                 code, saved = call("/api/admin/products", p)
                 self.assertEqual(code, 200)
@@ -232,6 +230,7 @@ class ShopTest(unittest.TestCase):
                 self.assertNotIn(
                     pid, [p["id"] for p in call("/api/shop")[1]["products"]]
                 )
+                self.assertEqual(call("/api/shop")[1]["products"], [])
                 self.assertEqual(call("/api/logout", {})[0], 200)
                 self.assertEqual(call("/api/admin/orders")[0], 401)
             finally:

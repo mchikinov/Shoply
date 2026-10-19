@@ -218,13 +218,6 @@ h2 {
 .small {
   font-size: 12px;
 }
-.demo {
-  font-size: 11px;
-  border: 1px solid var(--store-line);
-  padding: 5px 10px;
-  border-radius: 15px;
-  white-space: nowrap;
-}
 .filter-panel {
   padding: 18px 20px;
   background: var(--store-surface);
@@ -298,23 +291,9 @@ select {
   display: block;
   width: 100%;
   aspect-ratio: 1;
-  background-image: url('/assets/images/shoply-catalog.jpg');
-  background-size: 200% 200%;
   background-color: var(--store-surface);
   border-radius: 12px;
   border: 0;
-}
-.q0 {
-  background-position: 0 0;
-}
-.q1 {
-  background-position: 100% 0;
-}
-.q2 {
-  background-position: 0 100%;
-}
-.q3 {
-  background-position: 100% 100%;
 }
 .category {
   font-size: 11px;
@@ -576,11 +555,11 @@ select {
   margin: 22px 0;
   font-size: 13px;
 }
-.demo-number {
+.order-number {
   font-size: 13px;
   color: var(--store-muted);
 }
-.demo-number b {
+.order-number b {
   color: var(--color-text);
 }
 .success-meta {
@@ -783,9 +762,6 @@ footer {
     flex-direction: column;
     gap: 0;
   }
-  .heading-row .demo {
-    margin-bottom: 18px;
-  }
   .filter-panel {
     padding: 14px;
   }
@@ -887,13 +863,6 @@ footer {
 /* Скрытие состояния имеет приоритет над оформлением компонентов. */
 [hidden] {
   display: none !important;
-}
-/* Одна и та же модель лампы в каталоге, карточке и списке корзины. */
-.product-photo.q0 {
-  background-image: url('/assets/images/shoply-product.jpg');
-  background-size: contain;
-  background-repeat: no-repeat;
-  background-position: center;
 }
 #order-fields {
   margin: 0;
@@ -1835,7 +1804,7 @@ html.cart-open {
   color: #ffb4a9;
 }
 @media (max-width: 650px) {
-  .header #support-demo {
+  .header #support-link {
     margin-left: auto;
   }
   .header .header-link:first-of-type {

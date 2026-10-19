@@ -53,7 +53,7 @@ function support() {
           <path d="m15 15 5 5" />
         </svg>
         <input
-          id="search-demo"
+          id="catalog-search"
           ref="searchInputElement"
           v-model="search"
           :disabled="loading"
@@ -64,7 +64,7 @@ function support() {
         />
       </label>
       <button
-        id="support-demo"
+        id="support-link"
         class="header-link"
         aria-label="Поддержка в Telegram"
         @click="support"

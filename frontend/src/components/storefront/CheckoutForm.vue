@@ -55,7 +55,7 @@ function submit(event: Event) {
     <h1>Оформление заказа</h1>
     <div class="split">
       <form
-        id="demo-order"
+        id="checkout-form"
         class="checkout-form"
         @submit.prevent="submit"
       >
@@ -165,7 +165,7 @@ function submit(event: Event) {
           </div>
           <button
             class="button"
-            form="demo-order"
+            form="checkout-form"
             type="submit"
             :disabled="!ready || submitting || !lines.length"
           >

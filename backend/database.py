@@ -3,7 +3,7 @@
 import json
 from contextlib import contextmanager
 import sqlite3
-from config import DATA, DEFAULT, PUBLIC
+from config import DATA, DEFAULT
 
 
 @contextmanager
@@ -19,7 +19,7 @@ def connect():
 
 
 def init():
-    """Создать схему и один раз заполнить настройки и демонстрационный каталог."""
+    """Создать схему и начальные настройки; новый каталог остаётся пустым."""
     DATA.mkdir(parents=True, exist_ok=True)
     with connect() as db:
         db.executescript(
@@ -29,26 +29,6 @@ def init():
             db.execute(
                 "INSERT INTO config VALUES(?,?)", ("settings", json.dumps(DEFAULT))
             )
-        if not db.execute("SELECT 1 FROM config WHERE key='seeded'").fetchone():
-            seed = json.loads(
-                (PUBLIC / "assets/js/products.js")
-                .read_text()
-                .split("=", 1)[1]
-                .strip()
-                .rstrip(";")
-            )
-            for p in seed:
-                p.update(
-                    description="Демонстрационный товар Shoply. Замените описание и фотографии в админке.",
-                    properties=[],
-                    photos=[],
-                    demo=True,
-                )
-                db.execute(
-                    "INSERT INTO products(id,body) VALUES(?,?)",
-                    (p["id"], json.dumps(p, ensure_ascii=False)),
-                )
-            db.execute("INSERT INTO config VALUES(?,?)", ("seeded", "true"))
 
 
 def config(db, key):

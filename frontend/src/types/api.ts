@@ -12,7 +12,6 @@ export interface Product {
   photos: string[];
   properties: Property[];
   description: string;
-  demo: boolean;
 }
 export interface Settings {
   name: string;

@@ -18,7 +18,7 @@ const { receipt } = storeToRefs(useCheckoutStore());
       <div>
         <span class="status">Ожидает оплаты</span>
         <h1>Заказ оформлен</h1>
-        <p class="demo-number">
+        <p class="order-number">
           Ваш заказ
           <b
             >№ <span id="order-number">{{ receipt.id }}</span>

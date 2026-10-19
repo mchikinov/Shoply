@@ -24,7 +24,6 @@ export function useProductEditor(
     category: '',
     price: '',
     description: '',
-    demo: false,
     photo: 0,
     photos: [],
     properties: [],

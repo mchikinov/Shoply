@@ -32,7 +32,6 @@ def product_body(body):
         name=text(body.get("name"), 160, True),
         category=text(body.get("category"), 100, True),
         description=text(body.get("description", ""), 10000),
-        demo=bool(body.get("demo", False)),
     )
     price = body.get("price")
     if (

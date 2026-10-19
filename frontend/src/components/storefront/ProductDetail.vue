@@ -122,7 +122,7 @@ onBeforeUnmount(() => {
           :aria-label="
             product.photos.length
               ? 'Открыть фотографии: ' + product.name
-              : product.name + ' — демонстрационная иллюстрация'
+              : product.name + ' — фото пока не добавлено'
           "
           @click="open"
           @keydown.enter.prevent="open"
@@ -130,11 +130,6 @@ onBeforeUnmount(() => {
         ></div>
       </div>
       <div class="detail-copy">
-        <span
-          v-if="product.demo"
-          class="demo"
-          >Демонстрационный товар</span
-        >
         <h1>{{ product.name }}</h1>
         <div class="price">{{ formatPrice(product.price) }}</div>
         <p class="description">
@@ -157,12 +152,6 @@ onBeforeUnmount(() => {
             <dd>{{ property.description }}</dd>
           </div>
         </dl>
-        <p
-          v-if="product.demo"
-          class="caption"
-        >
-          Названия и значения свойств произвольные. Значения задаются в админке.
-        </p>
       </div>
     </div>
   </section>

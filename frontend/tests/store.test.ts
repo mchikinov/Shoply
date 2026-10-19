@@ -57,7 +57,7 @@ describe('Витрина', () => {
     expect(
       wrapper.findAll('article').map((n) => n.attributes('data-id')),
     ).toEqual(['1', '0']);
-    await wrapper.get('#sort-demo').setValue('asc');
+    await wrapper.get('#catalog-sort').setValue('asc');
     expect(
       wrapper.findAll('article').map((n) => n.attributes('data-id')),
     ).toEqual(['0', '1']);
@@ -69,9 +69,9 @@ describe('Витрина', () => {
       .find((n) => n.text() === 'Дом')!
       .trigger('click');
     expect(wrapper.findAll('article')).toHaveLength(1);
-    await wrapper.get('#min-demo').setValue('6000');
+    await wrapper.get('#price-min').setValue('6000');
     expect(wrapper.findAll('article')).toHaveLength(0);
-    await wrapper.get('#reset-demo').trigger('click');
+    await wrapper.get('#filters-reset').trigger('click');
     expect(wrapper.findAll('article')).toHaveLength(2);
     expect(wrapper.emitted('reset')).toHaveLength(1);
     wrapper.unmount();
@@ -86,11 +86,11 @@ describe('Витрина', () => {
       products: [product, { ...product, id: 1, price: 14900 }],
       loading: false,
     });
-    expect(wrapper.get('#min-demo').element).toHaveProperty('value', '4900');
-    expect(wrapper.get('#max-demo').element).toHaveProperty('value', '14900');
-    await wrapper.get('#min-demo').setValue('10000');
-    await wrapper.get('#max-demo').setValue('6000');
-    expect(wrapper.get('#max-demo').element).toHaveProperty('value', '10000');
+    expect(wrapper.get('#price-min').element).toHaveProperty('value', '4900');
+    expect(wrapper.get('#price-max').element).toHaveProperty('value', '14900');
+    await wrapper.get('#price-min').setValue('10000');
+    await wrapper.get('#price-max').setValue('6000');
+    expect(wrapper.get('#price-max').element).toHaveProperty('value', '10000');
     wrapper.unmount();
   });
 
@@ -111,14 +111,14 @@ describe('Витрина', () => {
     const wrapper = mountStorefront({ attachTo: document.body });
     await flushPromises();
     await wrapper.get('[data-add="0"]').trigger('click');
-    expect(wrapper.get('#max-demo').element).toHaveProperty('value', '4900');
+    expect(wrapper.get('#price-max').element).toHaveProperty('value', '4900');
     expect(wrapper.get('#basket-count').text()).toBe('1');
     await navigate('#checkout');
     await wrapper.get('[name=fullname]').setValue('Тестовый покупатель');
     await wrapper.get('[name=phone]').setValue('+79991234567');
     await wrapper.get('[value=pickup]').setValue();
     expect(wrapper.get('#address-input').attributes('disabled')).toBeDefined();
-    await wrapper.get('#demo-order').trigger('submit');
+    await wrapper.get('#checkout-form').trigger('submit');
     await flushPromises();
     expect(wrapper.get('[name=fullname]').element).toHaveProperty(
       'value',
@@ -127,7 +127,7 @@ describe('Витрина', () => {
     expect(localStorage.getItem('shoply-pending-token')).toBeTruthy();
     expect(wrapper.get('#basket-count').text()).toBe('1');
     fail = false;
-    await wrapper.get('#demo-order').trigger('submit');
+    await wrapper.get('#checkout-form').trigger('submit');
     await flushPromises();
     await navigate('#success');
     expect(requests[0].token).toBe(requests[1].token);
@@ -182,7 +182,7 @@ describe('Витрина', () => {
     expect(wrapper.get('#connection-note').text()).toContain('Нет соединения');
     await navigate('#checkout');
     expect(
-      wrapper.get('[form="demo-order"]').attributes('disabled'),
+      wrapper.get('[form="checkout-form"]').attributes('disabled'),
     ).toBeDefined();
     wrapper.unmount();
     vi.stubGlobal(
@@ -297,13 +297,13 @@ describe('Маршруты и сохранение состояния', () => {
     );
     const wrapper = mountStorefront();
     await flushPromises();
-    await wrapper.get('#sort-demo').setValue('asc');
+    await wrapper.get('#catalog-sort').setValue('asc');
     await wrapper.get('[data-add="0"]').trigger('click');
     await navigate('#checkout');
     await wrapper.get('[name=fullname]').setValue('Черновик покупателя');
     await wrapper.get('[value=pickup]').setValue();
     await navigate('#catalog');
-    expect(wrapper.get('#sort-demo').element).toHaveProperty('value', 'asc');
+    expect(wrapper.get('#catalog-sort').element).toHaveProperty('value', 'asc');
     await navigate('#checkout');
     expect(wrapper.get('[name=fullname]').element).toHaveProperty(
       'value',
