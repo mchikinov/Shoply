@@ -291,6 +291,9 @@ select {
   display: block;
   width: 100%;
   aspect-ratio: 1;
+  background-image: url('/assets/images/product-placeholder.svg');
+  background-size: contain;
+  background-position: center;
   background-color: var(--store-surface);
   border-radius: 12px;
   border: 0;

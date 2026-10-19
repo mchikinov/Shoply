@@ -262,7 +262,7 @@ def missing_api(path):
 def static_file(path):
     """Раздать только разрешённый файл из каталога public."""
     relative = "index.html" if not path else unquote(path).lstrip("/")
-    allowed = relative in {"index.html", "admin.html"} or (
+    allowed = relative in {"index.html", "admin.html", "assets/images/product-placeholder.svg"} or (
         relative.startswith("assets/")
         and relative.endswith((".css", ".js", ".png", ".jpg", ".webp", ".woff2"))
     )

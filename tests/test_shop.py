@@ -107,6 +107,7 @@ class ShopTest(unittest.TestCase):
                     "/var/data/shoply.sqlite3",
                     "/codex/BRIEF.md",
                     "/assets/fonts/InterVariable.woff2",
+                    "/assets/images/product-placeholder.svg",
                 ]:
                     if path.startswith("/assets/"):
                         with urlopen(base + path) as resource:

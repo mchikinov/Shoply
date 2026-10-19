@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" fill="none">
+  <g stroke="#8190a3" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="80" y="68" width="80" height="64" rx="8"/>
+    <circle cx="105" cy="89" r="7"/>
+    <path d="m82 119 20-19 17 16 15-12 24 23"/>
+  </g>
+  <text x="120" y="162" text-anchor="middle" fill="#8190a3" font-family="Arial, sans-serif" font-size="17">Нет фото</text>
+</svg>
