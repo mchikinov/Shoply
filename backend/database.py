@@ -25,6 +25,10 @@ def init():
         db.executescript(
             "CREATE TABLE IF NOT EXISTS config(key TEXT PRIMARY KEY, value TEXT NOT NULL);\n        CREATE TABLE IF NOT EXISTS products(id INTEGER PRIMARY KEY AUTOINCREMENT, body TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1);\n        CREATE TABLE IF NOT EXISTS orders(id INTEGER PRIMARY KEY AUTOINCREMENT, token TEXT UNIQUE NOT NULL, body TEXT NOT NULL, status TEXT NOT NULL, created TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);"
         )
+        # Отдельная колонка не попадает в публичный товар и переживает его правки.
+        columns = {row["name"] for row in db.execute("PRAGMA table_info(products)")}
+        if "is_test" not in columns:
+            db.execute("ALTER TABLE products ADD COLUMN is_test INTEGER NOT NULL DEFAULT 0")
         if not db.execute("SELECT 1 FROM config WHERE key='settings'").fetchone():
             db.execute(
                 "INSERT INTO config VALUES(?,?)", ("settings", json.dumps(DEFAULT))

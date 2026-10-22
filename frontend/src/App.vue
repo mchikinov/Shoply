@@ -5,7 +5,7 @@ import { storeToRefs } from 'pinia';
 import StoreHeader from '@/components/storefront/StoreHeader.vue';
 import StoreFooter from '@/components/storefront/StoreFooter.vue';
 import CartDrawer from '@/components/storefront/CartDrawer.vue';
-import StoreToast from '@/components/storefront/StoreToast.vue';
+import StoreToast from '@/components/common/StoreToast.vue';
 import { useCatalogStore } from '@/stores/catalog';
 import { useCartStore } from '@/stores/cart';
 import { useNotificationsStore } from '@/stores/notifications';

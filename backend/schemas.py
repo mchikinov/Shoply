@@ -130,3 +130,9 @@ class SessionResponse(BaseModel):
 
     authenticated: bool
     setup: bool
+
+
+class TestDataCreate(RequestModel):
+    """Количество товаров генератора; bool и дробные значения запрещены."""
+
+    count: int = Field(ge=1, le=100)

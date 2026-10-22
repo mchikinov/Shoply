@@ -210,3 +210,77 @@ it('сохраняет черновики админки между раздел
   expect(location.hash).toBe('#/orders');
   wrapper.unmount();
 });
+
+/** Запускает настоящую админку с управляемым ответом генератора. */
+async function openPanel(status = 200) {
+  let finish: (() => void) | undefined;
+  const fetcher = vi.fn(async (url: string, options?: RequestInit) => {
+    if (url === '/api/session') return response({ authenticated: true });
+    if (url === '/api/shop') return response({ products: [product], settings });
+    if (url === '/api/admin/test-data') {
+      await new Promise<void>((resolve) => {
+        finish = resolve;
+      });
+      return status === 200
+        ? response({ count: options?.method === 'DELETE' ? 3 : 2 })
+        : response({ error: 'Войдите в админку.' }, status);
+    }
+    return response({});
+  });
+  vi.stubGlobal('fetch', fetcher);
+  const wrapper = mountAdmin();
+  await flushPromises();
+  await wrapper.get('[data-tab="test-data"]').trigger('click');
+  await flushPromises();
+  return { wrapper, fetcher, finish: () => finish?.() };
+}
+
+describe('Тестовые данные', () => {
+  it('проверяет количество, блокирует повтор и показывает результат создания и очистки', async () => {
+    const { wrapper, fetcher, finish } = await openPanel();
+    await wrapper.get('#test-product-count').setValue(101);
+    expect(
+      wrapper.get('#create-test-data').attributes('disabled'),
+    ).toBeDefined();
+    await wrapper.get('#test-product-count').setValue(2);
+    await wrapper.get('form').trigger('submit');
+    await wrapper.get('form').trigger('submit');
+    expect(
+      fetcher.mock.calls.filter(([url]) => url === '/api/admin/test-data'),
+    ).toHaveLength(1);
+    expect(
+      wrapper.get('#delete-test-data').attributes('disabled'),
+    ).toBeDefined();
+    finish();
+    await flushPromises();
+    expect(wrapper.get('#toast-message').text()).toBe(
+      'Тестовые данные созданы',
+    );
+    expect(wrapper.get('#toast-detail').text()).toContain('2');
+    vi.stubGlobal('confirm', () => false);
+    await wrapper.get('#delete-test-data').trigger('click');
+    expect(
+      fetcher.mock.calls.filter(([url]) => url === '/api/admin/test-data'),
+    ).toHaveLength(1);
+    vi.stubGlobal('confirm', () => true);
+    await wrapper.get('#delete-test-data').trigger('click');
+    finish();
+    await flushPromises();
+    expect(wrapper.get('#toast-message').text()).toBe(
+      'Тестовые данные удалены',
+    );
+    expect(wrapper.get('#toast-detail').text()).toContain('3');
+    wrapper.unmount();
+  });
+
+  it('закрывает сессию при 401 и не показывает успешное уведомление', async () => {
+    const { wrapper, finish } = await openPanel(401);
+    await wrapper.get('form').trigger('submit');
+    finish();
+    await flushPromises();
+    expect(wrapper.find('#dashboard').exists()).toBe(false);
+    expect(wrapper.get('#notice').text()).toContain('Войдите');
+    expect(wrapper.get('#toast-message').text()).toBe('');
+    wrapper.unmount();
+  });
+});

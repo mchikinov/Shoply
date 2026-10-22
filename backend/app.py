@@ -15,8 +15,10 @@ from config import PUBLIC, PUBLIC_ORIGIN, SECURE_COOKIE, SESSIONS, SETUP_TOKEN, 
 from database import config, connect, init
 from order_service import create_order, list_orders, update_status
 from product_service import list_products, save_product
+from test_data_service import create_test_products, delete_test_products
 from schemas import (
     Credentials,
+    TestDataCreate,
     HealthResponse,
     ImageUpload,
     OrderCreate,
@@ -231,6 +233,26 @@ def delete_product(request: Request, body: ProductDelete):
         return denied
     with connect() as db:
         return api_response(save_product(db, body.model_dump(), "DELETE"))
+
+
+@app.post("/api/admin/test-data", tags=["admin"])
+def generate_test_data(request: Request, body: TestDataCreate):
+    """Создать весь набор в одной транзакции, доступной только администратору."""
+    denied = require_admin(request)
+    if denied:
+        return denied
+    with connect() as db:
+        return api_response(create_test_products(db, body.count))
+
+
+@app.delete("/api/admin/test-data", tags=["admin"])
+def clear_test_data(request: Request):
+    """Удалить товары генератора, сохранив обычные товары и любые заказы."""
+    denied = require_admin(request)
+    if denied:
+        return denied
+    with connect() as db:
+        return api_response(delete_test_products(db))
 
 
 @app.post("/api/admin/settings", tags=["admin"])

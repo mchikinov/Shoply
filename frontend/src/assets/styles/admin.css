@@ -415,3 +415,25 @@ nav button.active {
 [data-theme='dark'] .theme-moon {
   display: none;
 }
+
+.test-data-panel {
+  max-width: 720px;
+  margin-bottom: 20px;
+}
+.test-data-quantity {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  align-items: center;
+}
+.test-data-quantity input {
+  width: 100px;
+  text-align: center;
+}
+.test-data-quantity button {
+  min-width: 44px;
+  min-height: 44px;
+}
+.test-data-panel h2 {
+  margin-top: 0;
+}

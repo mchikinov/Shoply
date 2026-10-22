@@ -5,6 +5,7 @@ import json
 import os
 import re
 import socket
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -12,6 +13,7 @@ import time
 import unittest
 from pathlib import Path
 from urllib.request import build_opener, HTTPCookieProcessor, Request, urlopen
+from unittest.mock import patch
 from urllib.error import HTTPError
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -19,6 +21,31 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class ShopTest(unittest.TestCase):
     """Проверить жизненный цикл магазина на изолированной временной базе."""
+
+    def test_migration_and_atomic_generation(self):
+        """Старая база сохраняется; ошибка внутри набора откатывает все вставки."""
+        sys.path.insert(0, str(ROOT / "backend"))
+        import database
+        import test_data_service
+        with tempfile.TemporaryDirectory() as data:
+            path = Path(data)
+            with sqlite3.connect(path / "shoply.sqlite3") as db:
+                db.execute("CREATE TABLE products(id INTEGER PRIMARY KEY AUTOINCREMENT, body TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1)")
+                db.execute("INSERT INTO products(body) VALUES(?)", ('{"name":"Существующий товар"}',))
+            with patch.object(database, "DATA", path):
+                database.init()
+                database.init()
+                with database.connect() as db:
+                    old = db.execute("SELECT * FROM products").fetchone()
+                    self.assertEqual(old["is_test"], 0)
+                    self.assertEqual(json.loads(old["body"])["name"], "Существующий товар")
+                    db.execute("CREATE TRIGGER fail_second BEFORE INSERT ON products WHEN (SELECT count(*) FROM products WHERE is_test=1) >= 1 BEGIN SELECT RAISE(ABORT, 'test failure'); END")
+                with self.assertRaises(sqlite3.IntegrityError):
+                    with database.connect() as db:
+                        test_data_service.create_test_products(db, 3)
+                with database.connect() as db:
+                    self.assertEqual(db.execute("SELECT count(*) FROM products").fetchone()[0], 1)
+                    self.assertEqual(test_data_service.delete_test_products(db)[1]["count"], 0)
 
     def test_full_shop_and_restart(self):
         """Проверить доступ, каталог, загрузки, заказы и устойчивость данных к перезапуску."""
@@ -137,8 +164,14 @@ class ShopTest(unittest.TestCase):
                     409,
                 )
                 self.assertEqual(call("/api/shop")[1]["products"], [])
+                for method in ("POST", "DELETE"):
+                    self.assertEqual(call("/api/admin/test-data", {"count": 1}, auth=False, method=method)[0], 401)
+                for count in (0, 101, -1, 1.5, True, "2"):
+                    self.assertEqual(call("/api/admin/test-data", {"count": count})[0], 400)
+
                 p = dict(
                     name="Тестовый товар",
+                    is_test=True,
                     category="Новая категория",
                     price=123.45,
                     description="<script>test</script>",
@@ -173,6 +206,28 @@ class ShopTest(unittest.TestCase):
                 self.assertEqual(call("/api/admin/settings", settings)[0], 200)
                 bad = dict(settings, telegram="javascript:alert(1)")
                 self.assertEqual(call("/api/admin/settings", bad)[0], 400)
+                self.assertEqual(call("/api/admin/test-data", {"count": 100})[1]["count"], 100)
+                self.assertEqual(call("/api/admin/test-data", {"count": 1})[1]["count"], 1)
+                generated = [x for x in call("/api/shop")[1]["products"] if x["id"] != pid]
+                self.assertEqual(len(generated), 101)
+                for item in generated:
+                    self.assertNotIn("is_test", item)
+                    self.assertIn(len(item["photos"]), (2, 3))
+                    self.assertEqual(len(item["photos"]), len(set(item["photos"])))
+                    for photo in item["photos"]:
+                        with urlopen(base + "/" + photo) as image:
+                            self.assertEqual(image.status, 200)
+                edited = dict(generated[0], name="Отредактированный товар", is_test=False)
+                self.assertEqual(call("/api/admin/products", edited)[0], 200)
+                self.assertEqual(call("/api/admin/products", {"id": generated[1]["id"]}, method="DELETE")[0], 200)
+                test_order = dict(token="generated-order", fullname="Покупатель", phone="+79991234567", delivery="pickup", items=[dict(id=edited["id"], quantity=1)])
+                self.assertEqual(call("/api/orders", test_order, auth=False)[0], 201)
+                before_cleanup = call("/api/admin/orders")[1]["orders"]
+                self.assertEqual(call("/api/admin/test-data", {}, method="DELETE")[1]["count"], 101)
+                self.assertEqual(call("/api/admin/test-data", {}, method="DELETE")[1]["count"], 0)
+                self.assertEqual(call("/api/admin/orders")[1]["orders"], before_cleanup)
+                self.assertEqual([x["id"] for x in call("/api/shop")[1]["products"]], [pid])
+                self.assertEqual(call("/api/admin/products", edited)[0], 400)
                 order = dict(
                     token="test-request-123",
                     fullname="Тестовый покупатель",
@@ -195,7 +250,7 @@ class ShopTest(unittest.TestCase):
                 self.assertEqual(retry["total"], 199)
                 self.assertEqual(retry["delivery"], "pickup")
                 orders = call("/api/admin/orders")[1]["orders"]
-                self.assertEqual(len(orders), 1)
+                self.assertEqual(len(orders), 2)
                 self.assertEqual(orders[0]["address"], "")
                 self.assertEqual(orders[0]["total"], 199)
                 self.assertEqual(

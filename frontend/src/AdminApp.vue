@@ -2,13 +2,14 @@
 import { nextTick, onMounted, ref, watch } from 'vue';
 import { RouterView, useRoute, useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
+import StoreToast from '@/components/common/StoreToast.vue';
 import ThemeToggle from '@/components/common/ThemeToggle.vue';
 import AdminLogin from '@/views/admin/AdminLogin.vue';
 import { useAuthStore } from '@/stores/auth';
 import { useNotificationsStore } from '@/stores/notifications';
 const auth = useAuthStore();
 const { authenticated, ready } = storeToRefs(auth);
-const { notice } = storeToRefs(useNotificationsStore());
+const { notice, toast } = storeToRefs(useNotificationsStore());
 const route = useRoute();
 const router = useRouter();
 const dashboard = ref<HTMLElement>();
@@ -57,16 +58,24 @@ onMounted(() => {
     >
       <nav>
         <button
-          v-for="tab in ['settings', 'products', 'orders'] as const"
+          v-for="tab in [
+            'settings',
+            'products',
+            'orders',
+            'test-data',
+          ] as const"
           :key="tab"
           :data-tab="tab"
           :class="{ active: route.name === tab }"
           @click="router.push({ name: tab })"
         >
           {{
-            { settings: 'Оформление', products: 'Товары', orders: 'Заказы' }[
-              tab
-            ]
+            {
+              settings: 'Оформление',
+              products: 'Товары',
+              orders: 'Заказы',
+              'test-data': 'Тестовые данные',
+            }[tab]
           }}
         </button>
         <button
@@ -78,10 +87,14 @@ onMounted(() => {
         </button>
       </nav>
       <RouterView v-slot="{ Component }">
-        <KeepAlive include="AdminSettings,AdminProducts">
+        <KeepAlive include="AdminSettings,AdminProducts,AdminTestData">
           <component :is="Component" />
         </KeepAlive>
       </RouterView>
     </section>
   </main>
+  <StoreToast
+    v-bind="toast"
+    @close="toast.text = ''"
+  />
 </template>
