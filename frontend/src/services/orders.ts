@@ -1,5 +1,6 @@
 import { request } from './http';
 import type { OrderInput, OrderReceipt, OrdersResponse } from '@/types/api';
+import { isCart } from './cart';
 
 /** Сохраняет заказ; принимает только подтверждение с серверной суммой и номером. */
 export async function createOrder(input: OrderInput): Promise<OrderReceipt> {
@@ -8,7 +9,8 @@ export async function createOrder(input: OrderInput): Promise<OrderReceipt> {
     !data ||
     !Number.isInteger(data.id) ||
     !Number.isFinite(data.total) ||
-    !['post', 'pickup'].includes(data.delivery)
+    !['post', 'pickup'].includes(data.delivery) ||
+    !isCart(data.cart)
   )
     throw new Error('Некорректное подтверждение заказа.');
   return data;

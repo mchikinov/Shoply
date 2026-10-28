@@ -30,7 +30,7 @@ export async function request<T>(
       data && typeof data === 'object' && 'error' in data
         ? String(data.error)
         : 'Ошибка запроса.';
-    throw new ApiError(message, response.status);
+    throw new ApiError(message, response.status, data);
   }
   return data as T;
 }

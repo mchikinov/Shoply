@@ -25,6 +25,22 @@ def init():
         db.executescript(
             "CREATE TABLE IF NOT EXISTS config(key TEXT PRIMARY KEY, value TEXT NOT NULL);\n        CREATE TABLE IF NOT EXISTS products(id INTEGER PRIMARY KEY AUTOINCREMENT, body TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 1);\n        CREATE TABLE IF NOT EXISTS orders(id INTEGER PRIMARY KEY AUTOINCREMENT, token TEXT UNIQUE NOT NULL, body TEXT NOT NULL, status TEXT NOT NULL, created TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);"
         )
+        db.executescript("""
+            CREATE TABLE IF NOT EXISTS carts(
+                id TEXT PRIMARY KEY,
+                version INTEGER NOT NULL DEFAULT 0,
+                body TEXT NOT NULL DEFAULT '[]'
+            );
+            CREATE TABLE IF NOT EXISTS cart_operations(
+                cart_id TEXT NOT NULL,
+                request_id TEXT NOT NULL,
+                fingerprint TEXT NOT NULL,
+                PRIMARY KEY(cart_id, request_id)
+            );
+        """)
+        order_columns = {row["name"] for row in db.execute("PRAGMA table_info(orders)")}
+        if "cart_id" not in order_columns:
+            db.execute("ALTER TABLE orders ADD COLUMN cart_id TEXT")
         # Отдельная колонка не попадает в публичный товар и переживает его правки.
         columns = {row["name"] for row in db.execute("PRAGMA table_info(products)")}
         if "is_test" not in columns:

@@ -8,6 +8,7 @@ const result = spawnSync(
     path.join(root, 'node_modules/vitest/vitest.mjs'),
     'run',
     'frontend/tests/store.test.ts',
+    'frontend/tests/cart.test.ts',
   ],
   { cwd: root, stdio: 'inherit' },
 );

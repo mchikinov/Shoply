@@ -33,13 +33,21 @@ export function createStorefrontRouter(pinia: Pinia) {
   router.beforeEach(async (to) => {
     const catalog = useCatalogStore(pinia);
     await catalog.initialize();
+    const cart = useCartStore(pinia);
+    if (!cart.ready || to.name === 'cart' || to.name === 'checkout')
+      await cart.load();
     if (
       to.name === 'product' &&
       catalog.ready &&
       !catalog.products.some((product) => product.id === Number(to.params.id))
     )
       return { name: 'catalog', replace: true };
-    if (to.name === 'checkout' && catalog.ready && !useCartStore(pinia).count)
+    if (
+      to.name === 'checkout' &&
+      (!cart.ready ||
+        cart.uncertain ||
+        (!cart.count && !useCheckoutStore(pinia).hasPending))
+    )
       return { name: 'cart', replace: true };
     if (to.name === 'success' && !useCheckoutStore(pinia).receipt)
       return { name: 'catalog', replace: true };

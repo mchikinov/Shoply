@@ -11,6 +11,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 
 from auth_service import sign_in
+from cart_routes import router as cart_router, cart_connection, cart_response
 from config import PUBLIC, PUBLIC_ORIGIN, SECURE_COOKIE, SESSIONS, SETUP_TOKEN, STATUSES
 from database import config, connect, init
 from order_service import create_order, list_orders, update_status
@@ -29,6 +30,7 @@ from schemas import (
     SettingsWrite,
     SessionResponse,
     ShopResponse,
+    CartError,
 )
 from settings_service import save_settings
 from upload_service import upload_image
@@ -66,12 +68,13 @@ app = FastAPI(
     description="Каталог, гостевое оформление заказов и управление магазином.",
     lifespan=lifespan,
 )
+app.include_router(cart_router)
 
 
 @app.middleware("http")
 async def protect_mutations(request, call_next):
     """Сохранить проверки Host, Origin, типа и размера изменяющих запросов."""
-    if request.method not in {"POST", "DELETE"}:
+    if request.method not in {"POST", "DELETE", "PATCH"}:
         return await call_next(request)
     host = request.headers.get("host", "")
     port = request.url.port
@@ -145,12 +148,14 @@ def shop():
     tags=["public"],
     status_code=201,
     response_model=OrderResponse,
-    responses={200: {"model": OrderResponse, "description": "Повтор ранее принятого заказа"}},
+    responses={200: {"model": OrderResponse, "description": "Повтор ранее принятого заказа"},
+               409: {"model": CartError, "description": "Корзина изменилась; требуется подтверждение"}},
 )
-def create_guest_order(body: OrderCreate):
-    """Создать гостевой заказ; итог рассчитать по ценам SQLite."""
-    with connect() as db:
-        return api_response(create_order(db, body.model_dump()))
+def create_guest_order(request: Request, body: OrderCreate):
+    """Проверить показанную корзину и атомарно создать заказ либо вернуть конфликт."""
+    with cart_connection(request) as (db, cart_id, cookie):
+        result = create_order(db, body.model_dump(), cart_id)
+    return cart_response(result, cookie)
 
 
 @app.get("/api/session", tags=["admin"], response_model=SessionResponse)
@@ -274,7 +279,7 @@ def upload(request: Request, body: ImageUpload):
     return api_response(upload_image(body.model_dump()))
 
 
-@app.api_route("/api/{path:path}", methods=["GET", "POST", "DELETE"], include_in_schema=False)
+@app.api_route("/api/{path:path}", methods=["GET", "POST", "DELETE", "PATCH"], include_in_schema=False)
 def missing_api(path):
     """Вернуть прежний JSON-ответ для неизвестного API-маршрута."""
     return JSONResponse({"error": "Не найдено."}, status_code=404)

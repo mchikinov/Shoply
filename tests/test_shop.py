@@ -15,6 +15,7 @@ from pathlib import Path
 from urllib.request import build_opener, HTTPCookieProcessor, Request, urlopen
 from unittest.mock import patch
 from urllib.error import HTTPError
+from test_cart import CartTest
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -94,6 +95,14 @@ class ShopTest(unittest.TestCase):
                         return (r.status, json.load(r))
                 except HTTPError as e:
                     return (e.code, json.load(e))
+
+            def put_in_cart(pid, quantity, request_id):
+                """Подготовить серверную корзину того же HTTP-клиента для заказа."""
+                cart = call("/api/cart")[1]
+                code, cart = call("/api/cart/items", dict(id=pid, quantity=quantity,
+                                  request_id=request_id, version=cart["version"]))
+                self.assertEqual(code, 200)
+                return cart["version"]
 
             try:
                 process = start()
@@ -220,8 +229,8 @@ class ShopTest(unittest.TestCase):
                 edited = dict(generated[0], name="Отредактированный товар", is_test=False)
                 self.assertEqual(call("/api/admin/products", edited)[0], 200)
                 self.assertEqual(call("/api/admin/products", {"id": generated[1]["id"]}, method="DELETE")[0], 200)
-                test_order = dict(token="generated-order", fullname="Покупатель", phone="+79991234567", delivery="pickup", items=[dict(id=edited["id"], quantity=1)])
-                self.assertEqual(call("/api/orders", test_order, auth=False)[0], 201)
+                test_order = dict(token="generated-order", fullname="Покупатель", phone="+79991234567", delivery="pickup", cart_version=put_in_cart(edited["id"], 1, "generated-cart"))
+                self.assertEqual(call("/api/orders", test_order)[0], 201)
                 before_cleanup = call("/api/admin/orders")[1]["orders"]
                 self.assertEqual(call("/api/admin/test-data", {}, method="DELETE")[1]["count"], 101)
                 self.assertEqual(call("/api/admin/test-data", {}, method="DELETE")[1]["count"], 0)
@@ -236,15 +245,15 @@ class ShopTest(unittest.TestCase):
                     address="Не сохранять",
                     items=[dict(id=pid, quantity=2, price=0.01)],
                     total=0.02,
+                    cart_version=put_in_cart(pid, 2, "regular-cart"),
                 )
-                code, created = call("/api/orders", order, auth=False)
+                code, created = call("/api/orders", order)
                 self.assertEqual(code, 201)
                 oid = created["id"]
                 self.assertEqual(created["total"], 199)
                 retry = call(
                     "/api/orders",
                     dict(order, delivery="post", address="Другой адрес"),
-                    auth=False,
                 )[1]
                 self.assertEqual(retry["id"], oid)
                 self.assertEqual(retry["total"], 199)
@@ -257,7 +266,7 @@ class ShopTest(unittest.TestCase):
                     call("/api/admin/orders", {"id": oid, "status": "В работе"})[0], 200
                 )
                 invalid = dict(order, token="other", delivery="post", address="")
-                self.assertEqual(call("/api/orders", invalid, auth=False)[0], 400)
+                self.assertEqual(call("/api/orders", invalid)[0], 400)
                 self.assertEqual(
                     call("/api/admin/products", {"id": pid}, method="DELETE")[0], 200
                 )

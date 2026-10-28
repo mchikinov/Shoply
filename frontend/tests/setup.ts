@@ -11,6 +11,7 @@ beforeEach(() => {
   pinia = createPinia();
   setActivePinia(pinia);
   localStorage.clear();
+  sessionStorage.clear();
   document.documentElement.removeAttribute('style');
   document.documentElement.dataset.theme = 'light';
   window.history.replaceState({}, '', '/');

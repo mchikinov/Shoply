@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
 import { reactive } from 'vue';
-import type { Delivery, Product } from '@/types/api';
+import type { Delivery, CartLine } from '@/types/api';
 import { formatPrice } from '@/utils/format';
 
 const props = defineProps<{
-  lines: (Product & { quantity: number })[];
+  lines: CartLine[];
   total: number;
   ready: boolean;
   submitting: boolean;
+  hasPending?: boolean;
 }>();
 const emit = defineEmits<{
   submit: [
@@ -32,7 +33,7 @@ function submit(event: Event) {
   if (
     !props.ready ||
     props.submitting ||
-    !props.lines.length ||
+    (!props.lines.length && !props.hasPending) ||
     !(event.target as HTMLFormElement).reportValidity()
   )
     return;
@@ -153,7 +154,7 @@ function submit(event: Event) {
                   {{ product.quantity }} шт. × {{ formatPrice(product.price) }}
                 </div>
               </div>
-              <b>{{ formatPrice(product.price * product.quantity) }}</b>
+              <b>{{ formatPrice(product.subtotal) }}</b>
             </li>
           </ul>
         </section>
@@ -167,9 +168,15 @@ function submit(event: Event) {
             class="button"
             form="checkout-form"
             type="submit"
-            :disabled="!ready || submitting || !lines.length"
+            :disabled="!ready || submitting || (!lines.length && !hasPending)"
           >
-            {{ submitting ? 'Сохраняем…' : 'Оплатить' }}
+            {{
+              submitting
+                ? 'Сохраняем…'
+                : hasPending
+                  ? 'Повторить оформление'
+                  : 'Оплатить'
+            }}
           </button>
           <p class="small muted">
             Кнопка сохраняет заказ со статусом «Ожидает оплаты». Денежные

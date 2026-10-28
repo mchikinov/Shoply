@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUpdate, onUpdated, ref } from 'vue';
+import { nextTick, onBeforeUpdate, onUpdated, ref, watch } from 'vue';
 import type { Product } from '@/types/api';
+import { useCartStore } from '@/stores/cart';
 
 const props = defineProps<{
   product: Product;
@@ -12,6 +13,8 @@ const emit = defineEmits<{
   remove: [id: number];
 }>();
 const host = ref<HTMLElement>();
+const cart = useCartStore();
+let focusRequest: { label: string | null } | null = null;
 let before: { rect: DOMRect; content: string | null } | null = null;
 /** Анимирует изменение размеров и количества с учётом настройки уменьшенного движения. */
 onBeforeUpdate(() => {
@@ -57,24 +60,39 @@ onUpdated(() => {
 });
 
 /** Восстанавливает клавиатурный фокус после замены кнопок покупки при обновлении Vue. */
-async function change(delta: number, remove = false) {
-  const focused = host.value?.contains(document.activeElement);
-  const label = document.activeElement?.getAttribute('aria-label');
+function change(delta: number, remove = false) {
+  if (host.value?.contains(document.activeElement))
+    focusRequest = {
+      label: document.activeElement?.getAttribute('aria-label') ?? null,
+    };
   if (remove) emit('remove', props.product.id);
   else emit('change', props.product.id, delta);
-  await nextTick();
-  if (focused) {
-    const buttons = [
-      ...(host.value?.querySelectorAll<HTMLButtonElement>('button') || []),
-    ];
-    (
-      buttons.find(
-        (button) =>
-          button.getAttribute('aria-label') === label && !button.disabled,
-      ) || buttons.find((button) => !button.disabled)
-    )?.focus({ preventScroll: true });
-  }
 }
+
+/** Возвращает фокус после серверного ответа и замены кнопок, не перехватывая его у других полей. */
+watch(
+  () => cart.busy,
+  async (busy) => {
+    if (busy || !focusRequest) return;
+    await nextTick();
+    if (
+      document.activeElement === document.body ||
+      host.value?.contains(document.activeElement)
+    ) {
+      const buttons = [
+        ...(host.value?.querySelectorAll<HTMLButtonElement>('button') || []),
+      ];
+      (
+        buttons.find(
+          (button) =>
+            button.getAttribute('aria-label') === focusRequest?.label &&
+            !button.disabled,
+        ) || buttons.find((button) => !button.disabled)
+      )?.focus({ preventScroll: true });
+    }
+    focusRequest = null;
+  },
+);
 </script>
 
 <template>
@@ -87,6 +105,7 @@ async function change(delta: number, remove = false) {
       v-if="!quantity"
       :class="['button', { secondary: !detail }]"
       :data-add="product.id"
+      :disabled="cart.busy || cart.uncertain"
       @click="change(1)"
     >
       {{ detail ? 'Добавить в корзину' : 'В корзину' }}
@@ -101,6 +120,7 @@ async function change(delta: number, remove = false) {
         :data-remove="product.id"
         :aria-label="`Удалить ${product.name} из корзины`"
         title="Удалить из корзины"
+        :disabled="cart.busy || cart.uncertain"
         @click="change(0, true)"
       >
         <svg
@@ -118,6 +138,7 @@ async function change(delta: number, remove = false) {
         <button
           type="button"
           :aria-label="`Уменьшить количество ${product.name}`"
+          :disabled="cart.busy || cart.uncertain"
           @click="change(-1)"
         >
           −
@@ -130,7 +151,7 @@ async function change(delta: number, remove = false) {
         <button
           type="button"
           :aria-label="`Увеличить количество ${product.name}`"
-          :disabled="quantity >= 999"
+          :disabled="cart.busy || cart.uncertain"
           @click="change(1)"
         >
           +

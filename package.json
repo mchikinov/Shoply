@@ -10,7 +10,7 @@
     "typecheck": "vue-tsc --noEmit",
     "build": "npm run typecheck && vite build && node scripts/publish_frontend.mjs",
     "test": "vitest run",
-    "test:store": "vitest run frontend/tests/store.test.ts",
+    "test:store": "vitest run frontend/tests/store.test.ts frontend/tests/cart.test.ts",
     "test:admin": "vitest run frontend/tests/admin.test.ts",
     "test:theme": "vitest run frontend/tests/theme.test.ts",
     "lint": "eslint frontend vite.config.ts --max-warnings=0",

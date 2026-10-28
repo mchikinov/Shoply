@@ -5,15 +5,22 @@ import re
 from config import STATUSES
 from validation import text
 from response import response
+from cart_service import get_cart, save_lines, cart_conflict
 
 
-def create_order(db, body):
-    """Создать заказ по серверным ценам или вернуть результат повторного запроса."""
+def create_order(db, body, cart_id):
+    """Оформить показанную версию корзины в транзакции с блокировкой записи.
+
+    Принятый токен возвращает исходный заказ только владельцу корзины.
+    Повтор не изменяет текущую корзину, включая добавленные после заказа товары.
+    """
     token = text(body.get("token"), 100, True)
     existing = db.execute(
-        "SELECT id,status,body FROM orders WHERE token=?", (token,)
+        "SELECT id,status,body,cart_id FROM orders WHERE token=?", (token,)
     ).fetchone()
     if existing:
+        if existing["cart_id"] != cart_id:
+            return response(409, dict(code="order_token_conflict", error="Токен заказа уже использован."))
         saved = json.loads(existing["body"])
         return response(
             200,
@@ -22,20 +29,29 @@ def create_order(db, body):
                 status=existing["status"],
                 total=saved["total"],
                 delivery=saved["delivery"],
+                cart=get_cart(db, cart_id),
             ),
         )
     customer, delivery, address = customer_details(body)
-    lines = order_lines(db, body.get("items"))
-    total = round(sum((p["price"] * p["quantity"] for p in lines)), 2)
+    cart = get_cart(db, cart_id)
+    if cart["version"] != body["cart_version"]:
+        return cart_conflict(cart)
+    if not cart["lines"]:
+        raise ValueError("Корзина пуста.")
+    lines = [dict(id=p["id"], name=p["name"], price=p["price"], quantity=p["quantity"])
+             for p in cart["lines"]]
+    total = cart["total"]
     order = dict(
         customer=customer, delivery=delivery, address=address, items=lines, total=total
     )
     cur = db.execute(
-        "INSERT INTO orders(token,body,status) VALUES(?,?,?)",
-        (token, json.dumps(order, ensure_ascii=False), STATUSES[0]),
+        "INSERT INTO orders(token,body,status,cart_id) VALUES(?,?,?,?)",
+        (token, json.dumps(order, ensure_ascii=False), STATUSES[0], cart_id),
     )
+    save_lines(db, cart_id, [])
     return response(
-        201, dict(id=cur.lastrowid, status=STATUSES[0], total=total, delivery=delivery)
+        201, dict(id=cur.lastrowid, status=STATUSES[0], total=total, delivery=delivery,
+                  cart=get_cart(db, cart_id))
     )
 
 
@@ -78,30 +94,3 @@ def customer_details(body):
         else ""
     )
     return (customer, delivery, address)
-
-
-def order_lines(db, requested):
-    """Проверить корзину и взять названия и цены только из активного каталога."""
-    lines = []
-    seen = set()
-    if not isinstance(requested, list) or not 1 <= len(requested) <= 100:
-        raise ValueError("Корзина пуста или слишком велика.")
-    for item in requested:
-        pid = item.get("id")
-        qty = item.get("quantity")
-        if (
-            type(pid) is not int
-            or type(qty) is not int
-            or (not 1 <= qty <= 999)
-            or (pid in seen)
-        ):
-            raise ValueError("Некорректный состав заказа.")
-        seen.add(pid)
-        row = db.execute(
-            "SELECT body FROM products WHERE id=? AND active=1", (pid,)
-        ).fetchone()
-        if not row:
-            raise ValueError("Один из товаров недоступен. Обновите каталог.")
-        p = json.loads(row["body"])
-        lines.append(dict(id=pid, name=p["name"], price=p["price"], quantity=qty))
-    return lines

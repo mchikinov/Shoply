@@ -38,14 +38,33 @@ export interface OrderInput extends Customer {
   token: string;
   delivery: Delivery;
   address: string;
-  items: { id: number; quantity: number }[];
+  cart_version: number;
+}
+export interface CartLine extends Product {
+  quantity: number;
+  subtotal: number;
+}
+export interface CartChange {
+  id: number;
+  name: string;
+  reason: 'price_changed' | 'unavailable';
+  old_price?: number;
+  price?: number;
+}
+export interface Cart {
+  lines: CartLine[];
+  count: number;
+  total: number;
+  version: number;
+  changes: CartChange[];
 }
 export interface OrderReceipt {
   id: number;
   total: number;
   delivery: Delivery;
+  cart: Cart;
 }
-export interface Order extends OrderReceipt {
+export interface Order extends Omit<OrderReceipt, 'cart'> {
   status: string;
   created: string;
   customer: Customer;

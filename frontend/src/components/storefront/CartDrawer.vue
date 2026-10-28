@@ -1,21 +1,45 @@
 <script setup lang="ts">
 import { RouterLink } from 'vue-router';
-import { nextTick, onMounted, onUnmounted, ref } from 'vue';
-import type { Product } from '@/types/api';
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
+import type { CartLine } from '@/types/api';
 import { formatPrice, plural, photoStyle } from '@/utils/format';
 import PurchaseControl from '@/components/storefront/PurchaseControl.vue';
 
-defineProps<{
-  lines: (Product & { quantity: number })[];
+const props = defineProps<{
+  lines: CartLine[];
   count: number;
   total: number;
+  ready: boolean;
+  busy: boolean;
+  error: string;
+  notice: string;
+  uncertain: boolean;
+  hasPending: boolean;
 }>();
 const emit = defineEmits<{
   close: [];
   change: [id: number, delta: number];
   remove: [id: number];
+  retry: [];
 }>();
 const root = ref<HTMLElement>();
+let restoreAfterRequest = false;
+let focusedProduct: number | null = null;
+watch(
+  () => props.busy,
+  (busy) => {
+    if (busy)
+      restoreAfterRequest ||= !!root.value?.contains(document.activeElement);
+    else {
+      const lineSurvives =
+        focusedProduct !== null &&
+        props.lines.some((line) => line.id === focusedProduct);
+      if (restoreAfterRequest && !lineSurvives) void restoreFocus();
+      restoreAfterRequest = false;
+      focusedProduct = null;
+    }
+  },
+);
 
 /** Обрабатывает Escape и удерживает клавиатурный фокус внутри корзины. */
 function keydown(event: KeyboardEvent) {
@@ -49,15 +73,17 @@ async function restoreFocus() {
 }
 
 /** Удаляет позицию и удерживает фокус в модальном окне после обновления DOM. */
-async function remove(id: number) {
+function remove(id: number) {
+  focusedProduct = id;
+  restoreAfterRequest = !!root.value?.contains(document.activeElement);
   emit('remove', id);
-  await restoreFocus();
 }
 
 /** Меняет количество и восстанавливает фокус, если последняя позиция исчезла. */
-async function change(id: number, delta: number) {
+function change(id: number, delta: number) {
+  focusedProduct = id;
+  restoreAfterRequest = !!root.value?.contains(document.activeElement);
   emit('change', id, delta);
-  await restoreFocus();
 }
 
 onMounted(() => {
@@ -96,6 +122,45 @@ onUnmounted(() => document.removeEventListener('keydown', keydown));
           </svg>
         </button>
       </div>
+      <p
+        v-if="notice"
+        id="cart-notice"
+        role="status"
+      >
+        {{ notice }}
+      </p>
+      <div
+        v-if="error || uncertain"
+        role="alert"
+      >
+        <p>
+          {{
+            error ||
+            'Результат изменения корзины не подтверждён. Повторите запрос.'
+          }}
+        </p>
+        <button
+          type="button"
+          class="button secondary"
+          :disabled="busy"
+          @click="emit('retry')"
+        >
+          Повторить запрос
+        </button>
+      </div>
+      <p
+        v-if="busy"
+        role="status"
+      >
+        Обновляем корзину…
+      </p>
+      <p
+        v-if="hasPending"
+        role="status"
+      >
+        Подтверждение предыдущего заказа не получено. Повторите оформление,
+        чтобы проверить результат без создания дубликата.
+      </p>
       <div class="split">
         <div>
           <div id="cart-lines">
@@ -128,12 +193,10 @@ onUnmounted(() => document.removeEventListener('keydown', keydown));
                   @remove="remove"
                 />
               </div>
-              <b class="price">{{
-                formatPrice(product.price * product.quantity)
-              }}</b>
+              <b class="price">{{ formatPrice(product.subtotal) }}</b>
             </article>
             <p
-              v-if="!lines.length"
+              v-if="ready && !busy && !lines.length"
               class="muted"
             >
               Корзина пуста.
@@ -156,11 +219,13 @@ onUnmounted(() => document.removeEventListener('keydown', keydown));
             <span>{{ formatPrice(total) }}</span>
           </div>
           <RouterLink
-            v-if="count"
+            v-if="ready && (count || hasPending) && !busy && !uncertain"
             id="checkout-link"
             class="button"
             to="/checkout"
-            >Оформить заказ →</RouterLink
+            >{{
+              hasPending ? 'Проверить оформление →' : 'Оформить заказ →'
+            }}</RouterLink
           >
           <p class="small muted">Стоимость доставки пока не рассчитывается.</p>
           <button

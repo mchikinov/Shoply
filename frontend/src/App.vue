@@ -8,13 +8,17 @@ import CartDrawer from '@/components/storefront/CartDrawer.vue';
 import StoreToast from '@/components/common/StoreToast.vue';
 import { useCatalogStore } from '@/stores/catalog';
 import { useCartStore } from '@/stores/cart';
+import { useCheckoutStore } from '@/stores/checkout';
 import { useNotificationsStore } from '@/stores/notifications';
 import { useCartActions } from '@/composables/useCartActions';
 import { useCartOverlay } from '@/composables/useCartOverlay';
 import { useShopAppearance } from '@/composables/useShopAppearance';
 const catalog = useCatalogStore();
 const { note } = storeToRefs(catalog);
-const { lines, count, total } = storeToRefs(useCartStore());
+const cart = useCartStore();
+const { hasPending } = storeToRefs(useCheckoutStore());
+const { lines, count, total, ready, busy, error, notice, uncertain } =
+  storeToRefs(cart);
 const { toast } = storeToRefs(useNotificationsStore());
 const { change, remove } = useCartActions();
 const content = ref<HTMLElement>();
@@ -53,9 +57,16 @@ onMounted(() => {
       :lines="lines"
       :count="count"
       :total="total"
+      :ready="ready"
+      :busy="busy"
+      :error="error"
+      :notice="notice"
+      :uncertain="uncertain"
+      :has-pending="hasPending"
       @close="close"
       @change="change"
       @remove="remove"
+      @retry="cart.retry().catch(() => {})"
     />
   </main>
   <StoreFooter :cart-open="cartOpen" />

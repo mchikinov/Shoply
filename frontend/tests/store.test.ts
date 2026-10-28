@@ -5,38 +5,158 @@ import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils';
 import Catalog from '@/components/storefront/ProductCatalog.vue';
 import Checkout from '@/components/storefront/CheckoutForm.vue';
 import ProductDetail from '@/components/storefront/ProductDetail.vue';
-import { readBasket } from '@/utils/basketStorage';
 import { useCartStore } from '@/stores/cart';
-import { useCatalogStore } from '@/stores/catalog';
 import { mountStorefront, navigateStorefront } from './apps';
-import { product, settings, response } from './fixtures';
+import { product, response, createStorefrontFetch } from './fixtures';
 
 async function navigate(hash: string) {
   await navigateStorefront(hash);
   await flushPromises();
 }
 describe('Витрина', () => {
-  it('сохраняет старую корзину, проверяет данные и ограничивает количество', () => {
-    localStorage.setItem(
-      'shoply-basket',
-      JSON.stringify({ 0: 2, 1: -1, 2: 1000, x: 3 }),
-    );
-    expect(readBasket()).toEqual({ 0: 2 });
-    useCatalogStore().products = [product];
-    const cart = useCartStore();
-    cart.change(0, 2000);
-    expect(cart.count).toBe(999);
-    expect(JSON.parse(localStorage.getItem('shoply-basket')!)[0]).toBe(999);
-    cart.change(88, 1);
-    expect(cart.basket[88]).toBeUndefined();
-    cart.remove(0);
-    expect(cart.total).toBe(0);
-    localStorage.setItem('shoply-basket', 'broken');
-    expect(readBasket()).toEqual({});
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
-      throw Error('blocked');
+  it('восстанавливает подтверждение после потери ответа и повторного чтения пустой корзины', async () => {
+    const tokens: unknown[] = [];
+    const api = createStorefrontFetch(async (body) => {
+      tokens.push(body.token);
+      if (tokens.length === 1) {
+        api.state.cart = {
+          lines: [],
+          count: 0,
+          total: 0,
+          version: 2,
+          changes: [],
+        };
+        throw Error('Ответ принятого заказа потерян');
+      }
+      return response({ id: 88, total: 4900, delivery: 'pickup' });
     });
-    expect(readBasket()).toEqual({});
+    vi.stubGlobal('fetch', vi.fn(api.fetch));
+    const wrapper = mountStorefront({ attachTo: document.body });
+    await flushPromises();
+    await wrapper.get('[data-add="0"]').trigger('click');
+    await navigate('#checkout');
+    await wrapper.get('[name=fullname]').setValue('Покупатель');
+    await wrapper.get('[name=phone]').setValue('+79991234567');
+    await wrapper.get('[value=pickup]').setValue();
+    await wrapper.get('#checkout-form').trigger('submit');
+    await flushPromises();
+    await navigate('#catalog');
+    await navigate('#checkout');
+    expect(wrapper.find('#checkout-form').exists()).toBe(true);
+    expect(
+      wrapper.get('[form="checkout-form"]').attributes('disabled'),
+    ).toBeUndefined();
+    await wrapper.get('#checkout-form').trigger('submit');
+    await flushPromises();
+    expect(tokens[0]).toBe(tokens[1]);
+    expect(wrapper.get('#order-number').text()).toBe('88');
+    wrapper.unmount();
+  });
+
+  it('сохраняет клавиатурный фокус после асинхронного добавления товара', async () => {
+    vi.stubGlobal('fetch', vi.fn(createStorefrontFetch().fetch));
+    const wrapper = mountStorefront({ attachTo: document.body });
+    await flushPromises();
+    const add = wrapper.get('[data-add="0"]');
+    (add.element as HTMLElement).focus();
+    await add.trigger('click');
+    await flushPromises();
+    expect(
+      wrapper
+        .get('[data-purchase="0"]')
+        .element.contains(document.activeElement),
+    ).toBe(true);
+    wrapper.unmount();
+  });
+
+  it('сохраняет фокус на увеличении количества внутри корзины', async () => {
+    const api = createStorefrontFetch();
+    let blocked = false;
+    let finish!: () => void;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (path: string, options?: RequestInit) => {
+        if (blocked && path === '/api/cart/items')
+          await new Promise<void>((resolve) => {
+            finish = resolve;
+          });
+        return api.fetch(path, options);
+      }),
+    );
+    const wrapper = mountStorefront({ attachTo: document.body });
+    await flushPromises();
+    await wrapper.get('[data-add="0"]').trigger('click');
+    await navigate('#cart');
+    const plus = wrapper.get(
+      '#cart button[aria-label="Увеличить количество Лампа <Сфера>"]',
+    );
+    (plus.element as HTMLElement).focus();
+    blocked = true;
+    const click = plus.trigger('click');
+    // Настоящий браузер снимает фокус с отключённой на время запроса кнопки.
+    (plus.element as HTMLElement).blur();
+    await click;
+    await flushPromises();
+    finish();
+    await flushPromises();
+    expect(document.activeElement).toBe(plus.element);
+    wrapper.unmount();
+  });
+
+  it('возвращает на обновлённую корзину при конфликте заказа и сохраняет черновик', async () => {
+    let orders = 0;
+    const api = createStorefrontFetch(async () => {
+      orders++;
+      api.state.cart = {
+        ...api.state.cart,
+        lines: [{ ...product, price: 5100, quantity: 1, subtotal: 5100 }],
+        total: 5100,
+        version: api.state.cart.version + 1,
+        changes: [
+          {
+            id: 0,
+            name: product.name,
+            reason: 'price_changed',
+            old_price: 4900,
+            price: 5100,
+          },
+        ],
+      };
+      return response(
+        {
+          code: 'cart_changed',
+          error: 'Корзина изменилась. Проверьте товары и цены.',
+          cart: api.state.cart,
+        },
+        409,
+      );
+    });
+    vi.stubGlobal('fetch', vi.fn(api.fetch));
+    const wrapper = mountStorefront({ attachTo: document.body });
+    await flushPromises();
+    await wrapper.get('[data-add="0"]').trigger('click');
+    await navigate('#checkout');
+    await wrapper.get('[name=fullname]').setValue('Черновик');
+    await wrapper.get('[name=phone]').setValue('+79991234567');
+    await wrapper.get('[value=pickup]').setValue();
+    await wrapper.get('#checkout-form').trigger('submit');
+    await flushPromises();
+    expect(location.hash).toBe('#/cart');
+    expect(wrapper.get('#cart-notice').text()).toContain('Корзина изменилась');
+    expect(wrapper.get('#cart').text()).toContain('5 100 ₽');
+    expect(orders).toBe(1);
+    expect(useCartStore().total).toBe(5100);
+    await navigate('#checkout');
+    expect(wrapper.get('[name=fullname]').element).toHaveProperty(
+      'value',
+      'Черновик',
+    );
+    expect(wrapper.get('[value=pickup]').element).toHaveProperty(
+      'checked',
+      true,
+    );
+    expect(orders).toBe(1);
+    wrapper.unmount();
   });
 
   it('фильтрует по поиску, категории, цене, сортирует и сбрасывает', async () => {
@@ -99,18 +219,18 @@ describe('Витрина', () => {
     const requests: Record<string, unknown>[] = [];
     vi.stubGlobal(
       'fetch',
-      vi.fn(async (path: string, options?: RequestInit) => {
-        if (path === '/api/shop')
-          return response({ products: [product], settings });
-        const body = JSON.parse(String(options?.body));
-        requests.push(body);
-        if (fail) throw Error('Потеря соединения');
-        return response({ id: 41, total: 4700, delivery: 'pickup' }, 201);
-      }),
+      vi.fn(
+        createStorefrontFetch(async (body) => {
+          requests.push(body);
+          if (fail) throw Error('Потеря соединения');
+          return response({ id: 41, total: 4700, delivery: 'pickup' }, 201);
+        }).fetch,
+      ),
     );
     const wrapper = mountStorefront({ attachTo: document.body });
     await flushPromises();
     await wrapper.get('[data-add="0"]').trigger('click');
+    await flushPromises();
     expect(wrapper.get('#price-max').element).toHaveProperty('value', '4900');
     expect(wrapper.get('#basket-count').text()).toBe('1');
     await navigate('#checkout');
@@ -124,7 +244,7 @@ describe('Витрина', () => {
       'value',
       'Тестовый покупатель',
     );
-    expect(localStorage.getItem('shoply-pending-token')).toBeTruthy();
+    expect(sessionStorage.getItem('shoply-pending-token')).toBeTruthy();
     expect(wrapper.get('#basket-count').text()).toBe('1');
     fail = false;
     await wrapper.get('#checkout-form').trigger('submit');
@@ -135,7 +255,7 @@ describe('Витрина', () => {
     expect(wrapper.get('#success').text()).toContain('4 700 ₽');
     expect(wrapper.get('#success').text()).toContain('Ожидает оплаты');
     expect(wrapper.get('#basket-count').text()).toBe('0');
-    expect(localStorage.getItem('shoply-pending-token')).toBeNull();
+    expect(sessionStorage.getItem('shoply-pending-token')).toBeNull();
     await navigate('#catalog');
     await wrapper.get('[data-add="0"]').trigger('click');
     await navigate('#success');
@@ -144,10 +264,7 @@ describe('Витрина', () => {
   });
 
   it('обрабатывает прямую ссылку, корзину поверх товара и возврат фокуса', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => response({ products: [product], settings })),
-    );
+    vi.stubGlobal('fetch', vi.fn(createStorefrontFetch().fetch));
     window.history.replaceState({}, '', '/#product/0');
     const wrapper = mountStorefront({ attachTo: document.body });
     await flushPromises();
@@ -181,14 +298,11 @@ describe('Витрина', () => {
     await flushPromises();
     expect(wrapper.get('#connection-note').text()).toContain('Нет соединения');
     await navigate('#checkout');
-    expect(
-      wrapper.get('[form="checkout-form"]').attributes('disabled'),
-    ).toBeDefined();
+    expect(location.hash).toBe('#/cart');
+    expect(wrapper.find('[role="alert"]').exists()).toBe(true);
+    expect(wrapper.find('#checkout-link').exists()).toBe(false);
     wrapper.unmount();
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => response({ products: [product], settings })),
-    );
+    vi.stubGlobal('fetch', vi.fn(createStorefrontFetch().fetch));
     setActivePinia(createPinia());
     window.history.replaceState({}, '', '/#checkout');
     const empty = mountStorefront();
@@ -213,12 +327,20 @@ describe('Витрина', () => {
       phone: '+79991234567',
       delivery: 'pickup' as const,
       address: '',
-      items: [{ id: 0, quantity: 1 }],
+      cart_version: 0,
     };
     const first = checkout.submit(fields);
+    await flushPromises();
     expect(await checkout.submit(fields)).toBeNull();
     expect(fetcher).toHaveBeenCalledTimes(1);
-    resolve(response({ id: 7, total: 4900, delivery: 'pickup' }));
+    resolve(
+      response({
+        id: 7,
+        total: 4900,
+        delivery: 'pickup',
+        cart: { lines: [], count: 0, total: 0, version: 1, changes: [] },
+      }),
+    );
     await first;
     expect(checkout.submitting).toBe(false);
   });
@@ -227,7 +349,7 @@ describe('Витрина', () => {
     const checkout = mount(Checkout, {
       global: { stubs: { RouterLink: RouterLinkStub } },
       props: {
-        lines: [{ ...product, quantity: 1 }],
+        lines: [{ ...product, quantity: 1, subtotal: 4900 }],
         total: 4900,
         ready: true,
         submitting: false,
@@ -260,10 +382,7 @@ describe('Витрина', () => {
 
 describe('Маршруты и сохранение состояния', () => {
   it('принимает старые ссылки при открытии и после запуска, обрабатывает назад и вперёд', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => response({ products: [product], settings })),
-    );
+    vi.stubGlobal('fetch', vi.fn(createStorefrontFetch().fetch));
     window.history.replaceState({}, '', '/#product/0');
     const wrapper = mountStorefront({ attachTo: document.body });
     await vi.waitFor(() =>
@@ -291,10 +410,7 @@ describe('Маршруты и сохранение состояния', () => {
   });
 
   it('сохраняет фильтры и незавершённое оформление между страницами', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async () => response({ products: [product], settings })),
-    );
+    vi.stubGlobal('fetch', vi.fn(createStorefrontFetch().fetch));
     const wrapper = mountStorefront();
     await flushPromises();
     await wrapper.get('#catalog-sort').setValue('asc');

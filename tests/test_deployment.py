@@ -126,11 +126,20 @@ class DeploymentTest(unittest.TestCase):
                 self.assertEqual(status, 200)
                 product = call("/api/shop")[1]["products"][0]
                 self.assertEqual(product["id"], saved["id"])
+                status, cart, headers = call("/api/cart")
+                self.assertEqual(status, 200)
+                self.assertIn("; Secure", headers["Set-Cookie"])
+                guest = {"Cookie": headers["Set-Cookie"].split(";", 1)[0], "Origin": origin}
+                status, cart, _ = call("/api/cart/items", {
+                    "id": product["id"], "quantity": 1,
+                    "version": cart["version"], "request_id": "deployment-cart",
+                }, guest)
+                self.assertEqual(status, 200)
                 status, order, _ = call("/api/orders", {
                     "token": "deployment-order-test", "fullname": "Test Buyer",
                     "phone": "+7 999 123 45 67", "delivery": "pickup",
-                    "items": [{"id": product["id"], "quantity": 1}],
-                }, {"Origin": origin})
+                    "cart_version": cart["version"],
+                }, guest)
                 self.assertEqual(status, 201)
                 stop()
                 runtime["SHOPLY_SETUP_TOKEN"] = ""  # После создания администратора секрет можно удалить.
