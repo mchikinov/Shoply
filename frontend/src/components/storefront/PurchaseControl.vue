@@ -7,6 +7,7 @@ const props = defineProps<{
   product: Product;
   quantity: number;
   detail?: boolean;
+  steady?: boolean;
 }>();
 const emit = defineEmits<{
   change: [id: number, delta: number];
@@ -20,6 +21,7 @@ let before: { rect: DOMRect; content: string | null } | null = null;
 onBeforeUpdate(() => {
   const control = host.value?.firstElementChild;
   before =
+    !props.steady &&
     control?.getClientRects().length &&
     !window.matchMedia('(prefers-reduced-motion: reduce)').matches
       ? { rect: control.getBoundingClientRect(), content: control.textContent }
@@ -99,7 +101,11 @@ watch(
   <div
     ref="host"
     :data-purchase="product.id"
-    :class="{ 'detail-purchase': detail }"
+    :class="{
+      'detail-purchase': detail,
+      'purchase-steady': steady,
+      'is-busy': steady && cart.busy,
+    }"
   >
     <button
       v-if="!quantity"

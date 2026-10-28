@@ -5,6 +5,9 @@ import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils';
 import Catalog from '@/components/storefront/ProductCatalog.vue';
 import Checkout from '@/components/storefront/CheckoutForm.vue';
 import ProductDetail from '@/components/storefront/ProductDetail.vue';
+import CartDrawer from '@/components/storefront/CartDrawer.vue';
+import PurchaseControl from '@/components/storefront/PurchaseControl.vue';
+import { nextTick } from 'vue';
 import { useCartStore } from '@/stores/cart';
 import { mountStorefront, navigateStorefront } from './apps';
 import { product, response, createStorefrontFetch } from './fixtures';
@@ -14,6 +17,143 @@ async function navigate(hash: string) {
   await flushPromises();
 }
 describe('Витрина', () => {
+  it('сохраняет кнопку оформления и прежние данные на время запроса, блокируя переход', async () => {
+    const api = createStorefrontFetch();
+    let finish!: () => void;
+    let delay = false;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (path: string, options?: RequestInit) => {
+        if (delay && path === '/api/cart/items')
+          await new Promise<void>((resolve) => {
+            finish = resolve;
+          });
+        return api.fetch(path, options);
+      }),
+    );
+    const wrapper = mountStorefront({ attachTo: document.body });
+    await flushPromises();
+    await wrapper.get('[data-add="0"]').trigger('click');
+    await navigate('#cart');
+    const checkout = wrapper.get('#checkout-link').element;
+    const checkoutHref = wrapper.get('#checkout-link').attributes('href');
+    delay = true;
+    await wrapper
+      .get('#cart button[aria-label="Увеличить количество Лампа <Сфера>"]')
+      .trigger('click');
+    await flushPromises();
+    expect(wrapper.get('#checkout-link').element).toBe(checkout);
+    expect(wrapper.get('#checkout-link').attributes('aria-disabled')).toBe(
+      'true',
+    );
+    expect(wrapper.get('#checkout-link').attributes('href')).toBeUndefined();
+    expect(wrapper.get('#checkout-link').attributes('tabindex')).toBe('0');
+    expect(wrapper.get('#cart-quantity').text()).toContain('1 товар');
+    await wrapper.get('#checkout-link').trigger('click');
+    await flushPromises();
+    expect(location.hash).toBe('#/cart');
+    finish();
+    await flushPromises();
+    expect(wrapper.get('#checkout-link').element).toBe(checkout);
+    expect(
+      wrapper.get('#checkout-link').attributes('aria-disabled'),
+    ).toBeUndefined();
+    expect(wrapper.get('#checkout-link').attributes('href')).toBe(checkoutHref);
+    expect(wrapper.get('#cart-quantity').text()).toContain('2 товара');
+    wrapper.unmount();
+  });
+
+  it('показывает индикатор только для медленного запроса и очищает таймер при закрытии', async () => {
+    vi.useFakeTimers();
+    const wrapper = mount(CartDrawer, {
+      global: { stubs: { RouterLink: RouterLinkStub } },
+      props: {
+        lines: [{ ...product, quantity: 1, subtotal: 4900 }],
+        count: 1,
+        total: 4900,
+        ready: true,
+        busy: false,
+        error: '',
+        notice: '',
+        uncertain: false,
+        hasPending: false,
+      },
+    });
+    try {
+      await wrapper.setProps({ busy: true });
+      await vi.advanceTimersByTimeAsync(100);
+      expect(wrapper.find('.cart-progress-indicator').exists()).toBe(false);
+      await wrapper.setProps({ busy: false });
+      await vi.advanceTimersByTimeAsync(250);
+      expect(wrapper.find('.cart-progress-indicator').exists()).toBe(false);
+      await wrapper.setProps({ busy: true });
+      await vi.advanceTimersByTimeAsync(200);
+      await nextTick();
+      expect(wrapper.find('.cart-progress-indicator').exists()).toBe(true);
+      expect(wrapper.get('.cart-progress').text()).toContain(
+        'Обновляем корзину',
+      );
+      await wrapper.setProps({ busy: false });
+      expect(wrapper.find('.cart-progress-indicator').exists()).toBe(false);
+      await wrapper.setProps({ busy: true });
+      wrapper.unmount();
+      expect(vi.getTimerCount()).toBe(0);
+    } finally {
+      wrapper.unmount();
+      vi.useRealTimers();
+    }
+  });
+
+  it('сохраняет ссылку оформления при сетевой ошибке, оставляя её заблокированной', async () => {
+    const api = createStorefrontFetch();
+    let fail = false;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (path: string, options?: RequestInit) => {
+        if (fail && path === '/api/cart/items') throw Error('Нет связи');
+        return api.fetch(path, options);
+      }),
+    );
+    const wrapper = mountStorefront();
+    await flushPromises();
+    await wrapper.get('[data-add="0"]').trigger('click');
+    await navigate('#cart');
+    const checkout = wrapper.get('#checkout-link').element;
+    fail = true;
+    await wrapper
+      .get('#cart button[aria-label="Увеличить количество Лампа <Сфера>"]')
+      .trigger('click');
+    await flushPromises();
+    expect(wrapper.get('#checkout-link').element).toBe(checkout);
+    expect(wrapper.get('#checkout-link').attributes('aria-disabled')).toBe(
+      'true',
+    );
+    expect(wrapper.get('#checkout-link').attributes('href')).toBeUndefined();
+    expect(wrapper.get('#cart').text()).toContain('Нет связи');
+    expect(wrapper.get('#cart-quantity').text()).toContain('1 товар');
+    wrapper.unmount();
+  });
+
+  it('обновляет количество в корзине без анимации масштаба и прозрачности', async () => {
+    const wrapper = mount(PurchaseControl, {
+      props: { product, quantity: 1, steady: true },
+    });
+    const host = wrapper.get('[data-purchase]').element;
+    const control = wrapper.get('.purchase-actions').element;
+    const quantity = wrapper.get('.purchase-qty span').element;
+    const animate = vi.fn();
+    Object.defineProperty(control, 'getClientRects', {
+      value: () => [control.getBoundingClientRect()],
+    });
+    Object.defineProperty(control, 'animate', { value: animate });
+    Object.defineProperty(quantity, 'animate', { value: animate });
+    await wrapper.setProps({ quantity: 2 });
+    expect(quantity.textContent).toBe('2');
+    expect(host.contains(quantity)).toBe(true);
+    expect(animate).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
   it('восстанавливает подтверждение после потери ответа и повторного чтения пустой корзины', async () => {
     const tokens: unknown[] = [];
     const api = createStorefrontFetch(async (body) => {

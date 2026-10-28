@@ -23,6 +23,20 @@ const emit = defineEmits<{
   retry: [];
 }>();
 const root = ref<HTMLElement>();
+const showProgress = ref(false);
+/** Короткие запросы не показывают индикатор; новый запрос и закрытие отменяют таймер. */
+watch(
+  () => props.busy,
+  (busy, _previous, onCleanup) => {
+    showProgress.value = false;
+    if (!busy) return;
+    const timer = setTimeout(() => {
+      showProgress.value = true;
+    }, 200);
+    onCleanup(() => clearTimeout(timer));
+  },
+  { immediate: true },
+);
 let restoreAfterRequest = false;
 let focusedProduct: number | null = null;
 watch(
@@ -107,7 +121,21 @@ onUnmounted(() => document.removeEventListener('keydown', keydown));
       aria-labelledby="cart-title"
     >
       <div class="cart-heading">
-        <h1 id="cart-title">Корзина</h1>
+        <div class="cart-title-group">
+          <h1 id="cart-title">Корзина</h1>
+          <span
+            class="cart-progress"
+            role="status"
+          >
+            <template v-if="showProgress">
+              <span
+                class="cart-progress-indicator"
+                aria-hidden="true"
+              ></span>
+              <span class="cart-progress-label">Обновляем корзину…</span>
+            </template>
+          </span>
+        </div>
         <button
           type="button"
           class="cart-close"
@@ -149,12 +177,6 @@ onUnmounted(() => document.removeEventListener('keydown', keydown));
         </button>
       </div>
       <p
-        v-if="busy"
-        role="status"
-      >
-        Обновляем корзину…
-      </p>
-      <p
         v-if="hasPending"
         role="status"
       >
@@ -189,6 +211,7 @@ onUnmounted(() => document.removeEventListener('keydown', keydown));
                 <PurchaseControl
                   :product="product"
                   :quantity="product.quantity"
+                  steady
                   @change="change"
                   @remove="remove"
                 />
@@ -196,7 +219,7 @@ onUnmounted(() => document.removeEventListener('keydown', keydown));
               <b class="price">{{ formatPrice(product.subtotal) }}</b>
             </article>
             <p
-              v-if="ready && !busy && !lines.length"
+              v-if="ready && !lines.length"
               class="muted"
             >
               Корзина пуста.
@@ -219,14 +242,28 @@ onUnmounted(() => document.removeEventListener('keydown', keydown));
             <span>{{ formatPrice(total) }}</span>
           </div>
           <RouterLink
-            v-if="ready && (count || hasPending) && !busy && !uncertain"
-            id="checkout-link"
-            class="button"
+            v-if="count || hasPending"
+            v-slot="{ href, navigate }"
             to="/checkout"
-            >{{
-              hasPending ? 'Проверить оформление →' : 'Оформить заказ →'
-            }}</RouterLink
+            custom
           >
+            <a
+              id="checkout-link"
+              class="button"
+              :href="!ready || busy || uncertain ? undefined : href"
+              role="link"
+              tabindex="0"
+              :aria-disabled="!ready || busy || uncertain || undefined"
+              @click="
+                !ready || busy || uncertain
+                  ? $event.preventDefault()
+                  : navigate($event)
+              "
+              >{{
+                hasPending ? 'Проверить оформление →' : 'Оформить заказ →'
+              }}</a
+            >
+          </RouterLink>
           <p class="small muted">Стоимость доставки пока не рассчитывается.</p>
           <button
             type="button"

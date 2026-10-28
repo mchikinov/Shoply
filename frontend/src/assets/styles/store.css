@@ -1290,6 +1290,54 @@ html.cart-open {
   margin: 0;
   font-size: 28px;
 }
+.cart-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+/* Место индикатора зарезервировано: его появление не меняет геометрию корзины. */
+.cart-progress {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+.cart-progress-indicator {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--store-line);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: cart-progress-spin 0.8s linear infinite;
+}
+.cart-progress-label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.cart-panel .purchase-steady.is-busy button:disabled {
+  opacity: 1;
+  cursor: wait;
+}
+.cart-panel #checkout-link[aria-disabled='true'] {
+  cursor: wait;
+}
+@keyframes cart-progress-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cart-progress-indicator {
+    animation: none;
+  }
+}
 .cart-close {
   display: flex;
   align-items: center;
